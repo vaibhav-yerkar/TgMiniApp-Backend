@@ -32,6 +32,7 @@ model Users{
   score       Int     @default(0)
   dailyTasks  Tasks[] @relation("dailyTasks")
   onceTasks   Tasks[] @relation("onceTasks")
+  lastResetDate DateTime @default(now())
 }
 
 enum TaskType {

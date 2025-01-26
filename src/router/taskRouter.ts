@@ -12,7 +12,7 @@ import { adminAuth } from "../middleware/admin";
 
 const router = express.Router();
 
-router.get("/", auth, getAllTasks);
+router.get("/", auth, adminAuth, getAllTasks);
 router.get("/daily", auth, getDailyTasks);
 router.get("/once", auth, getOnceTasks);
 router.post("/", adminAuth, createTask);

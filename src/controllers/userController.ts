@@ -11,6 +11,38 @@ declare global {
 
 const prisma = new PrismaClient();
 
+const resetDailyTasks = async (userId: number) => {
+  const user = await prisma.users.findUnique({
+    where: { id: userId },
+    include: { dailyTasks: true },
+  });
+  if (!user) return null;
+
+  const lastReset = new Date(user.lastResetDate);
+  const now = new Date();
+
+  if (
+    lastReset.getDate() != now.getDate() ||
+    lastReset.getMonth() != now.getMonth() ||
+    lastReset.getFullYear() != now.getFullYear()
+  ) {
+    return await prisma.users.update({
+      where: { id: userId },
+      data: {
+        dailyTasks: {
+          set: [],
+        },
+        lastResetDate: now,
+      },
+      include: {
+        dailyTasks: true,
+        onceTasks: true,
+      },
+    });
+  }
+  return user;
+};
+
 /**
  * @swagger
  * components:
@@ -53,13 +85,8 @@ const prisma = new PrismaClient();
 export const getUserProfile: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
-    const user = await prisma.users.findUnique({
-      where: { id: userId },
-      include: {
-        dailyTasks: true,
-        onceTasks: true,
-      },
-    });
+
+    const user = await resetDailyTasks(userId);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -294,5 +321,37 @@ export const updateUser: RequestHandler = async (req, res) => {
     return;
   } catch (error) {
     res.json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /user/all:
+ *   get:
+ *     summary: Get all users
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ */
+export const getAllUsers: RequestHandler = async (req, res) => {
+  try {
+    const users = await prisma.users.findMany({
+      include: {
+        dailyTasks: true,
+        onceTasks: true,
+      },
+    });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };
