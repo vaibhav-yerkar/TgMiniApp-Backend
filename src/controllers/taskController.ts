@@ -9,20 +9,22 @@ const prisma = new PrismaClient();
  *   schemas:
  *     Task:
  *       type: object
- *       required:
- *         - title
- *         - link
- *         - type
- *         - points
  *       properties:
  *         id:
  *           type: integer
  *         title:
  *           type: string
+ *         cta:
+ *           type: string
+ *           default: "Complete"
  *         description:
  *           type: string
+ *           nullable: true
  *         link:
  *           type: string
+ *         image:
+ *           type: string
+ *           nullable: true
  *         type:
  *           type: string
  *           enum: [DAILY, ONCE]
@@ -35,9 +37,7 @@ const prisma = new PrismaClient();
  * /tasks:
  *   get:
  *     summary: Get all tasks
- *     tags: [Tasks - User]
- *     security:
- *       - bearerAuth: []
+ *     tags: [Tasks]
  *     responses:
  *       200:
  *         description: List of all tasks
@@ -98,6 +98,7 @@ export const getDailyTasks = async (req: Request, res: Response) => {
  *         content:
  *           application/json:
  *             schema:
+ *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
@@ -130,16 +131,19 @@ export const getOnceTasks = async (req: Request, res: Response) => {
  *             type: object
  *             required:
  *               - title
- *               - description
  *               - link
  *               - type
  *               - points
  *             properties:
  *               title:
  *                 type: string
+ *               cta:
+ *                 type: string
  *               description:
  *                 type: string
  *               link:
+ *                 type: string
+ *               image:
  *                 type: string
  *               type:
  *                 type: string
@@ -147,8 +151,8 @@ export const getOnceTasks = async (req: Request, res: Response) => {
  *               points:
  *                 type: integer
  *     responses:
- *       200:
- *         description: Task created successfully
+ *       201:
+ *         description: Task created
  *         content:
  *           application/json:
  *             schema:
@@ -179,8 +183,6 @@ export const createTask = async (req: Request, res: Response) => {
  *         required: true
  *         schema:
  *           type: integer
- *         description: Task ID
- *         example: 1
  *     requestBody:
  *       required: true
  *       content:
@@ -190,9 +192,13 @@ export const createTask = async (req: Request, res: Response) => {
  *             properties:
  *               title:
  *                 type: string
+ *               cta:
+ *                 type: string
  *               description:
  *                 type: string
  *               link:
+ *                 type: string
+ *               image:
  *                 type: string
  *               type:
  *                 type: string
@@ -201,7 +207,7 @@ export const createTask = async (req: Request, res: Response) => {
  *                 type: integer
  *     responses:
  *       200:
- *         description: Task updated successfully
+ *         description: Task updated
  *         content:
  *           application/json:
  *             schema:
@@ -235,31 +241,15 @@ export const updateTask = async (req: Request, res: Response) => {
  *         required: true
  *         schema:
  *           type: integer
- *         description: ID of task to delete
- *         example: 1
  *     responses:
  *       200:
- *         description: Task deleted successfully
+ *         description: Task deleted
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: "Task deleted successfully"
- *                 task:
- *                   $ref: '#/components/schemas/Task'
+ *               $ref: '#/components/schemas/Task'
  *       404:
  *         description: Task not found
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                   example: "Task not found"
  */
 export const deleteTask = async (req: Request, res: Response) => {
   try {
@@ -269,5 +259,43 @@ export const deleteTask = async (req: Request, res: Response) => {
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     res.status(404).json({ error: "Task not found" });
+  }
+};
+
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Task details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ */
+export const getTask = async (req: Request, res: Response) => {
+  try {
+    const task = await prisma.tasks.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+    }
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
 };

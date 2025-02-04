@@ -6,6 +6,7 @@ import {
   createTask,
   updateTask,
   deleteTask,
+  getTask,
 } from "../controllers/taskController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -18,5 +19,6 @@ router.get("/once", auth, getOnceTasks);
 router.post("/", adminAuth, createTask);
 router.put("/:id", adminAuth, updateTask);
 router.delete("/:id", adminAuth, deleteTask);
+router.get("/:id", auth, adminAuth, getTask);
 
 export default router;
