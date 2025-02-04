@@ -20,8 +20,11 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
  *             required:
  *               username:
  *                 type: string
+ *               telegramId:
+ *                type: int
  *             example:
  *               username: john_doe
+ *              telegramId: 123456789
  *     responses:
  *       200:
  *         description: User registered successfully

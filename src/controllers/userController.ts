@@ -55,18 +55,23 @@ const prisma = new PrismaClient();
  *       type: object
  *       required:
  *         - username
- *         - score
+ *         - totalScore
+ *         - taskScore
+ *         - inviteScore
+ *         - taskCompleted
  *       properties:
  *         id:
  *           type: integer
  *         username:
  *           type: string
- *         score:
+ *         totalScore:
  *           type: integer
- *         dailyTasks:
- *           type: Tasks
- *         OnceTasks:
- *           type: Tasks
+ *         taskScore:
+ *           type: integer
+ *         inviteScore:
+ *           type: integer
+ *         taskCompleted:
+ *           type: array
  */
 
 /**
@@ -192,7 +197,7 @@ export const completeTask: RequestHandler = async (req, res) => {
       where: { id: userId },
       data: {
         taskScore: user.taskScore + task.points,
-        totalScore: user.totalScore + user.inviteScore,
+        totalScore: user.totalScore + task.points,
         taskCompleted: {
           push: taskId,
         },
