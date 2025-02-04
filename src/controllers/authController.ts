@@ -18,18 +18,38 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
  *           schema:
  *             type: object
  *             required:
+ *               - username
+ *               - telegramId
+ *             properties:
  *               username:
  *                 type: string
+ *                 example: "john_doe"
  *               telegramId:
- *                type: int
- *             example:
- *               username: john_doe
- *              telegramId: 123456789
+ *                 type: integer
+ *                 example: 123456789
  *     responses:
  *       200:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     username:
+ *                       type: string
+ *                     telegramId:
+ *                       type: integer
  *       400:
  *         description: Username already exists
+ *       500:
+ *         description: Internal server error
  */
 
 export const register: RequestHandler = async (req, res) => {
