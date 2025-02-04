@@ -55,20 +55,30 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
 export const register: RequestHandler = async (req, res) => {
   try {
     const { username, telegramId } = req.body;
+    const inviteLinkBase = process.env.INVITE_LINK_BASE_URL;
+
+    if (!inviteLinkBase) {
+      res.status(500).json({ error: "Invite link base URL not configured" });
+    }
 
     // Check if user already exists
-    const existingUser = await prisma.users.findUnique({
-      where: { username },
+    const existingUser = await prisma.users.findFirst({
+      where: {
+        OR: [{ username }, { telegramId }],
+      },
     });
 
     if (existingUser) {
-      res.status(400).json({ error: "Username already exists" });
-      return;
+      if (existingUser.username === username) {
+        res.status(400).json({ error: "Username already exists" });
+      }
+      if (existingUser.telegramId === telegramId) {
+        res.status(400).json({ error: "Telegram ID already registered" });
+      }
     }
-
-    console.log("hello", username);
+    const inviteLink = `${inviteLinkBase}?start=inviter_${telegramId}`;
     const user = await prisma.users.create({
-      data: { username, telegramId },
+      data: { username, telegramId, inviteLink },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);

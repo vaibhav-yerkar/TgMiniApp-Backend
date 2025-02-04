@@ -28,7 +28,8 @@ model Tasks{
 
 model Users{
   id            Int       @id @default(autoincrement())
-  telegramId    Int?       @unique
+  inviteLink    String    @unique
+  telegramId    Int       @unique
   username      String    @unique
   totalScore    Int       @default(0)
   taskScore     Int       @default(0)

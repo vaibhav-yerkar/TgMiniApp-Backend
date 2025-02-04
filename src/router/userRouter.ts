@@ -6,6 +6,8 @@ import {
   deleteUser,
   updateUser,
   getAllUsers,
+  resetTaskScore,
+  rewardInviter,
 } from "../controllers/userController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -18,5 +20,7 @@ router.get("/leaderboard", auth, getLeaderboard);
 router.delete("/delete/:userId", adminAuth, deleteUser);
 router.put("/update/:userId", adminAuth, updateUser);
 router.get("/all", adminAuth, getAllUsers);
+router.post("/reset-score", adminAuth, resetTaskScore);
+router.post("/reward-inviter", auth, rewardInviter);
 
 export default router;
