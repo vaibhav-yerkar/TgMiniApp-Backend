@@ -35,6 +35,7 @@ model Users{
   inviteScore   Int       @default(0)
   lastResetDate DateTime  @default(now())
   taskCompleted Int[]     @default([])
+  Invitees      String[]     @default([])
 }
 
 enum TaskType {

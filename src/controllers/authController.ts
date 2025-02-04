@@ -31,7 +31,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
 
 export const register: RequestHandler = async (req, res) => {
   try {
-    const { username } = req.body;
+    const { username, telegramId } = req.body;
 
     // Check if user already exists
     const existingUser = await prisma.users.findUnique({
@@ -45,7 +45,7 @@ export const register: RequestHandler = async (req, res) => {
 
     console.log("hello", username);
     const user = await prisma.users.create({
-      data: { username, totalScore: 0, inviteScore: 0, taskScore: 0 },
+      data: { username, telegramId },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
