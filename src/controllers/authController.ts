@@ -45,7 +45,7 @@ export const register: RequestHandler = async (req, res) => {
 
     console.log("hello", username);
     const user = await prisma.users.create({
-      data: { username, score: 0 },
+      data: { username, totalScore: 0, inviteScore: 0, taskScore: 0 },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);

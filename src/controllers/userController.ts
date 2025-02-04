@@ -1,5 +1,9 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import {
+  verifyChannelMember,
+  verifyCommunityMember,
+} from "../config/telegramBot";
 
 declare global {
   namespace Express {
@@ -11,37 +15,37 @@ declare global {
 
 const prisma = new PrismaClient();
 
-const resetDailyTasks = async (userId: number) => {
-  const user = await prisma.users.findUnique({
-    where: { id: userId },
-    include: { dailyTasks: true },
-  });
-  if (!user) return null;
+// const resetDailyTasks = async (userId: number) => {
+//   const user = await prisma.users.findUnique({
+//     where: { id: userId },
+//     include: { dailyTasks: true },
+//   });
+//   if (!user) return null;
 
-  const lastReset = new Date(user.lastResetDate);
-  const now = new Date();
+//   const lastReset = new Date(user.lastResetDate);
+//   const now = new Date();
 
-  if (
-    lastReset.getDate() != now.getDate() ||
-    lastReset.getMonth() != now.getMonth() ||
-    lastReset.getFullYear() != now.getFullYear()
-  ) {
-    return await prisma.users.update({
-      where: { id: userId },
-      data: {
-        dailyTasks: {
-          set: [],
-        },
-        lastResetDate: now,
-      },
-      include: {
-        dailyTasks: true,
-        onceTasks: true,
-      },
-    });
-  }
-  return user;
-};
+//   if (
+//     lastReset.getDate() != now.getDate() ||
+//     lastReset.getMonth() != now.getMonth() ||
+//     lastReset.getFullYear() != now.getFullYear()
+//   ) {
+//     return await prisma.users.update({
+//       where: { id: userId },
+//       data: {
+//         dailyTasks: {
+//           set: [],
+//         },
+//         lastResetDate: now,
+//       },
+//       include: {
+//         dailyTasks: true,
+//         onceTasks: true,
+//       },
+//     });
+//   }
+//   return user;
+// };
 
 /**
  * @swagger
@@ -85,8 +89,11 @@ const resetDailyTasks = async (userId: number) => {
 export const getUserProfile: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+    });
 
-    const user = await resetDailyTasks(userId);
+    // const user = await resetDailyTasks(userId);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -135,16 +142,47 @@ export const completeTask: RequestHandler = async (req, res) => {
     }
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      include: { dailyTasks: true, onceTasks: true },
     });
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
+
+    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
+    if (taskId == parseInt(process.env.TELEGRAM_CHANNEL_TASK_ID as string)) {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const isMember = await verifyChannelMember(user.username);
+      if (!isMember) {
+        res.status(400).json({ error: "User not a member of the channel" });
+        return;
+      }
+    }
+    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
+    if (taskId == parseInt(process.env.TELEGRAM_COMMUNITY_TASK_ID as string)) {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const isMember = await verifyCommunityMember(user.username);
+      if (!isMember) {
+        res.status(400).json({ error: "User not a member of the community" });
+        return;
+      }
+    }
+
     const isTaskCompleted =
       task.type === "DAILY"
-        ? user.dailyTasks.some((t) => t.id === taskId)
-        : user.onceTasks.some((t) => t.id === taskId);
+        ? user.taskCompleted.find((id) => id === taskId)
+        : user.taskCompleted.find((id) => id === taskId);
     if (isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
@@ -153,13 +191,12 @@ export const completeTask: RequestHandler = async (req, res) => {
     const updatedUser = await prisma.users.update({
       where: { id: userId },
       data: {
-        score: user.score + task.points,
-        dailyTasks:
-          task.type === "DAILY" ? { connect: { id: taskId } } : undefined,
-        onceTasks:
-          task.type === "ONCE" ? { connect: { id: taskId } } : undefined,
+        taskScore: user.taskScore + task.points,
+        totalScore: user.totalScore + user.inviteScore,
+        taskCompleted: {
+          push: taskId,
+        },
       },
-      include: { dailyTasks: true, onceTasks: true },
     });
     res.json(updatedUser);
   } catch (error) {
@@ -189,8 +226,8 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
     const userId = parseInt(req.userId! as string);
 
     const users = await prisma.users.findMany({
-      select: { id: true, username: true, score: true },
-      orderBy: { score: "desc" },
+      select: { id: true, username: true, totalScore: true },
+      orderBy: { totalScore: "desc" },
     });
 
     const leaderboard = users.map((user, index) => ({
@@ -240,10 +277,6 @@ export const deleteUser: RequestHandler = async (req, res) => {
 
     const existingUser = await prisma.users.findUnique({
       where: { id: userId },
-      include: {
-        dailyTasks: true,
-        onceTasks: true,
-      },
     });
     if (!existingUser) {
       res.json({ error: "User not found" });
@@ -310,11 +343,8 @@ export const updateUser: RequestHandler = async (req, res) => {
       where: { id: userId },
       data: {
         ...updateData,
+        username: undefined,
         id: undefined,
-      },
-      include: {
-        dailyTasks: true,
-        onceTasks: true,
       },
     });
     res.json(updatedUser);
@@ -344,12 +374,7 @@ export const updateUser: RequestHandler = async (req, res) => {
  */
 export const getAllUsers: RequestHandler = async (req, res) => {
   try {
-    const users = await prisma.users.findMany({
-      include: {
-        dailyTasks: true,
-        onceTasks: true,
-      },
-    });
+    const users = await prisma.users.findMany({});
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
