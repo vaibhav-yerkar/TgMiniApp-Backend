@@ -38,8 +38,6 @@ const prisma = new PrismaClient();
  *   get:
  *     summary: Get all tasks
  *     tags: [Tasks]
- *     security:
- *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all tasks
@@ -53,6 +51,42 @@ const prisma = new PrismaClient();
 export const getAllTasks = async (req: Request, res: Response) => {
   const tasks = await prisma.tasks.findMany();
   res.json(tasks);
+};
+
+/**
+ * @swagger
+ * /tasks/{id}:
+ *   get:
+ *     summary: Get task by ID
+ *     tags: [Tasks]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Task details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Task'
+ *       404:
+ *         description: Task not found
+ */
+export const getTask = async (req: Request, res: Response) => {
+  try {
+    const task = await prisma.tasks.findUnique({
+      where: { id: Number(req.params.id) },
+    });
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+    }
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 /**
@@ -262,43 +296,5 @@ export const deleteTask = async (req: Request, res: Response) => {
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     res.status(404).json({ error: "Task not found" });
-  }
-};
-
-/**
- * @swagger
- * /tasks/{id}:
- *   get:
- *     summary: Get task by ID
- *     tags: [Tasks]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *     responses:
- *       200:
- *         description: Task details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Task'
- *       404:
- *         description: Task not found
- */
-export const getTask = async (req: Request, res: Response) => {
-  try {
-    const task = await prisma.tasks.findUnique({
-      where: { id: Number(req.params.id) },
-    });
-    if (!task) {
-      res.status(404).json({ error: "Task not found" });
-    }
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
   }
 };

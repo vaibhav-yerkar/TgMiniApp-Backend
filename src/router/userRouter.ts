@@ -8,6 +8,7 @@ import {
   getAllUsers,
   resetTaskScore,
   rewardInviter,
+  updateUserName,
 } from "../controllers/userController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -20,6 +21,7 @@ router.get("/all", adminAuth, getAllUsers);
 
 router.post("/complete-task/:taskId", auth, completeTask);
 router.post("/reward-inviter/:inviterId", auth, rewardInviter);
+router.post("/update-username", auth, updateUserName);
 router.post("/reset-score", adminAuth, resetTaskScore);
 
 router.put("/update/:userId", adminAuth, updateUser);
