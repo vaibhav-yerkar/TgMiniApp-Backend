@@ -101,10 +101,10 @@ export const register: RequestHandler = async (req, res) => {
  *           schema:
  *             type: object
  *             required:
- *               - username
+ *               - telegramId
  *             properties:
- *               username:
- *                 type: string
+ *               telegramID:
+ *                 type: integer
  *     responses:
  *       200:
  *         description: Login successful
@@ -112,12 +112,12 @@ export const register: RequestHandler = async (req, res) => {
  *         description: Invalid username
  */
 export const login: RequestHandler = async (req, res) => {
-  const { username } = req.body;
+  const { telegramId } = req.body;
 
-  const user = await prisma.users.findUnique({ where: { username } });
+  const user = await prisma.users.findUnique({ where: { telegramId } });
 
   if (!user) {
-    res.status(401).json({ error: "Invalid username" });
+    res.status(401).json({ error: "Invalid telegramId" });
     return;
   }
 
