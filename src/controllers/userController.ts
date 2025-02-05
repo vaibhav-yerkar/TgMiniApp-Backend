@@ -431,7 +431,7 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
- * /users/reward-inviter/{inviterId}:
+ * /user/reward-inviter/{inviterId}:
  *   post:
  *     summary: Reward user for inviting another user
  *     tags: [User - User]
@@ -475,7 +475,7 @@ export const rewardInviter: RequestHandler = async (req, res) => {
     }
 
     if (inviter && user) {
-      if (inviter.Invitees.includes(user.username)) {
+      if (inviter.Invitees.includes(user.telegramId)) {
         res.status(400).json({ error: "User already invited" });
       } else {
         const updatedInviter = await prisma.users.update({
@@ -487,7 +487,7 @@ export const rewardInviter: RequestHandler = async (req, res) => {
             totalScore: {
               increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
             },
-            Invitees: { push: user.username },
+            Invitees: { push: user.telegramId },
           },
         });
         res.json({
