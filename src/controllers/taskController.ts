@@ -80,6 +80,7 @@ export const getDailyTasks = async (req: Request, res: Response) => {
     });
     res.json(tasks);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

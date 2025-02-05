@@ -59,6 +59,7 @@ export const register: RequestHandler = async (req, res) => {
 
     if (!inviteLinkBase) {
       res.status(500).json({ error: "Invite link base URL not configured" });
+      return;
     }
 
     // Check if user already exists
@@ -71,9 +72,11 @@ export const register: RequestHandler = async (req, res) => {
     if (existingUser) {
       if (existingUser.username === username) {
         res.status(400).json({ error: "Username already exists" });
+        return;
       }
       if (existingUser.telegramId === telegramId) {
         res.status(400).json({ error: "Telegram ID already registered" });
+        return;
       }
     }
     const inviteLink = `${inviteLinkBase}?start=inviter_${telegramId}`;
@@ -114,7 +117,7 @@ export const register: RequestHandler = async (req, res) => {
 export const login: RequestHandler = async (req, res) => {
   const { telegramId } = req.body;
 
-  const user = await prisma.users.findUnique({ where: { telegramId } });
+  const user = await prisma.users.findFirst({ where: { telegramId } });
 
   if (!user) {
     res.status(401).json({ error: "Invalid telegramId" });

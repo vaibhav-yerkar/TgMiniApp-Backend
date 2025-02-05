@@ -15,6 +15,7 @@ declare global {
 export const auth: RequestHandler = (req, res, next) => {
   const token = req.headers["authorization"]?.replace("Bearer ", "");
   if (!token) {
+    console.log("no token");
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -24,6 +25,7 @@ export const auth: RequestHandler = (req, res, next) => {
     req.userId = decoded.userId;
     next();
   } catch (error) {
+    console.log(error);
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
