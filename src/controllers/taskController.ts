@@ -38,6 +38,8 @@ const prisma = new PrismaClient();
  *   get:
  *     summary: Get all tasks
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all tasks
