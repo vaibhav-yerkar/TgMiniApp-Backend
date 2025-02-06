@@ -36,6 +36,7 @@ model Users{
   inviteScore   Int       @default(0)
   lastResetDate DateTime  @default(now())
   taskCompleted Int[]     @default([])
+  onceTaskCompleted Int[]     @default([])
   Invitees      Int[]     @default([])
 }
 

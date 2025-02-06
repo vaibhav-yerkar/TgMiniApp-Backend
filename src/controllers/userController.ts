@@ -57,10 +57,6 @@ const prisma = new PrismaClient();
  *         - username
  *         - telegramId
  *         - inviteLink
- *         - totalScore
- *         - taskScore
- *         - inviteScore
- *         - taskCompleted
  *       properties:
  *         id:
  *           type: integer
@@ -78,6 +74,37 @@ const prisma = new PrismaClient();
  *           type: integer
  *         taskCompleted:
  *           type: array
+ *         onceTaskCompleted:
+ *           type: array
+ */
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Task:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *         title:
+ *           type: string
+ *         cta:
+ *           type: string
+ *           default: "Complete"
+ *         description:
+ *           type: string
+ *           nullable: true
+ *         link:
+ *           type: string
+ *         image:
+ *           type: string
+ *           nullable: true
+ *         type:
+ *           type: string
+ *           enum: [DAILY, ONCE]
+ *         points:
+ *           type: integer
  */
 
 /**
@@ -259,23 +286,37 @@ export const completeTask: RequestHandler = async (req, res) => {
     const isTaskCompleted =
       task.type === "DAILY"
         ? user.taskCompleted.find((id) => id === taskId)
-        : user.taskCompleted.find((id) => id === taskId);
+        : user.onceTaskCompleted.find((id) => id === taskId);
     if (isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
     }
 
-    const updatedUser = await prisma.users.update({
-      where: { id: userId },
-      data: {
-        taskScore: user.taskScore + task.points,
-        totalScore: user.totalScore + task.points,
-        taskCompleted: {
-          push: taskId,
+    if (task.type === "DAILY") {
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          taskScore: user.taskScore + task.points,
+          totalScore: user.totalScore + task.points,
+          taskCompleted: {
+            push: taskId,
+          },
         },
-      },
-    });
-    res.json(updatedUser);
+      });
+      res.json(updatedUser);
+    } else {
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          taskScore: user.taskScore + task.points,
+          totalScore: user.totalScore + task.points,
+          onceTaskCompleted: {
+            push: taskId,
+          },
+        },
+      });
+      res.json(updatedUser);
+    }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
