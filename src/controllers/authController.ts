@@ -106,7 +106,7 @@ export const register: RequestHandler = async (req, res) => {
  *             required:
  *               - telegramId
  *             properties:
- *               telegramID:
+ *               telegramId:
  *                 type: integer
  *     responses:
  *       200:
@@ -115,15 +115,10 @@ export const register: RequestHandler = async (req, res) => {
  *         description: Invalid username
  */
 export const login: RequestHandler = async (req, res) => {
-  const { telegramID } = req.body;
-  const parsedTelegramId = parseInt(telegramID);
-
-  if (isNaN(parsedTelegramId)) {
-    res.status(400).json({ error: "Invalid telegramId format" });
-  }
+  const { telegramId } = req.body;
 
   const user = await prisma.users.findFirst({
-    where: { telegramId: parsedTelegramId },
+    where: { telegramId },
   });
 
   if (!user) {
