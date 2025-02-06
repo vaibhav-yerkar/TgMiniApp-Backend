@@ -122,7 +122,7 @@ export const login: RequestHandler = async (req, res) => {
     res.status(400).json({ error: "Invalid telegramId format" });
   }
 
-  const user = await prisma.users.findUnique({
+  const user = await prisma.users.findFirst({
     where: { telegramId: parsedTelegramId },
   });
 
