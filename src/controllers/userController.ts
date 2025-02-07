@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+
 import {
   verifyChannelMember,
   verifyCommunityMember,
@@ -14,38 +15,6 @@ declare global {
 }
 
 const prisma = new PrismaClient();
-
-// const resetDailyTasks = async (userId: number) => {
-//   const user = await prisma.users.findUnique({
-//     where: { id: userId },
-//     include: { dailyTasks: true },
-//   });
-//   if (!user) return null;
-
-//   const lastReset = new Date(user.lastResetDate);
-//   const now = new Date();
-
-//   if (
-//     lastReset.getDate() != now.getDate() ||
-//     lastReset.getMonth() != now.getMonth() ||
-//     lastReset.getFullYear() != now.getFullYear()
-//   ) {
-//     return await prisma.users.update({
-//       where: { id: userId },
-//       data: {
-//         dailyTasks: {
-//           set: [],
-//         },
-//         lastResetDate: now,
-//       },
-//       include: {
-//         dailyTasks: true,
-//         onceTasks: true,
-//       },
-//     });
-//   }
-//   return user;
-// };
 
 /**
  * @swagger
@@ -162,6 +131,23 @@ export const getUserProfile: RequestHandler = async (req, res) => {
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
+    }
+
+    const lastReset = new Date(user.lastResetDate);
+    const now = new Date();
+    if (
+      lastReset.getDate() !== now.getDate() ||
+      lastReset.getMonth() !== now.getMonth() ||
+      lastReset.getFullYear() !== now.getFullYear()
+    ) {
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          taskCompleted: [],
+          lastResetDate: new Date(),
+        },
+      });
+      res.json(updatedUser);
     }
     res.json(user);
   } catch (error) {

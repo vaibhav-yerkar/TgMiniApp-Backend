@@ -2,12 +2,20 @@ import express, { Express, Request, Response } from "express";
 import { swaggerSpec } from "./config/swagger";
 import swaggerUi from "swagger-ui-express";
 import cors from "cors";
+import cron from "node-cron";
+import { resetDailyTasks } from "./config/cron-work";
 
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
 import authRouter from "./router/authRouter";
 import userRouter from "./router/userRouter";
 import announcemetRouter from "./router/announcementRouter";
+
+console.log("Initailizing cron job");
+cron.schedule("0 0 * * *", () => {
+  console.log("Running cron job");
+  resetDailyTasks();
+});
 
 const app: Express = express();
 const port = process.env.PORT || 8000;
