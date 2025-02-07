@@ -38,6 +38,8 @@ const prisma = new PrismaClient();
  *   get:
  *     summary: Get all tasks
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: List of all tasks
@@ -59,6 +61,8 @@ export const getAllTasks = async (req: Request, res: Response) => {
  *   get:
  *     summary: Get task by ID
  *     tags: [Tasks]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
