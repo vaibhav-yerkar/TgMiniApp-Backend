@@ -22,6 +22,7 @@ model Tasks{
   image       String?
   type        TaskType
   points      Int
+  isUploadRequired Boolean @default(false)
   createadAt  DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -49,4 +50,12 @@ model Admin{
   id        Int     @id @default(autoincrement())
   username  String  @unique
   password  String
+}
+
+model Anmt{
+  id          Int @id @default(autoincrement())
+  title       String 
+  description String?
+  image       String
+  anmtTasks   Int[]
 }

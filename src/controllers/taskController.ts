@@ -9,6 +9,12 @@ const prisma = new PrismaClient();
  *   schemas:
  *     Task:
  *       type: object
+ *       required:
+ *         - title
+ *         - cta
+ *         - link
+ *         - type
+ *         - points
  *       properties:
  *         id:
  *           type: integer
@@ -30,6 +36,8 @@ const prisma = new PrismaClient();
  *           enum: [DAILY, ONCE]
  *         points:
  *           type: integer
+ *         isUploadRequired:
+ *           type: boolean
  */
 
 /**
@@ -191,6 +199,8 @@ export const getOnceTasks = async (req: Request, res: Response) => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
+ *               isUploadRequired:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: Task created
@@ -246,6 +256,8 @@ export const createTask = async (req: Request, res: Response) => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
+ *               isUploadRequired:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Task updated
