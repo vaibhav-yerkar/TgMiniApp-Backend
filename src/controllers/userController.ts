@@ -173,7 +173,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  * @swagger
  * /user/leaderboard:
  *   get:
- *     summary: Get Leaderboard
+ *     summary: Get Weekly Leaderboard
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -187,6 +187,45 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  *               $ref: '#/components/schemas/User'
  */
 export const getLeaderboard: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId! as string);
+
+    const users = await prisma.users.findMany({
+      select: { id: true, username: true, totalScore: true, telegramId: true },
+      orderBy: { taskScore: "desc" },
+    });
+
+    const leaderboard = users.map((user, index) => ({
+      ...user,
+      rank: index + 1,
+    }));
+
+    const userPosition = leaderboard.find((user) => user.id === userId);
+
+    res.json({ currentUser: userPosition, leaderboard });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /user/overall-leaderboard:
+ *   get:
+ *     summary: Get Overall Leaderboard
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Leaderboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               $ref: '#/components/schemas/User'
+ */
+export const getOverallLeaderboard: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
 
@@ -420,6 +459,7 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
     const result = await prisma.users.updateMany({
       data: {
         taskScore: 0,
+        taskCompleted: [],
       },
     });
     res.json({
