@@ -114,6 +114,48 @@ export const getUserProfile: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
+ * /user/username/{userId}:
+ *   get:
+ *     summary: Get username by user ID
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: telegramId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: telegramId of the user to get username
+ *     responses:
+ *       200:
+ *         description: Username retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: string
+ *       404:
+ *         description: User not found
+ */
+export const getUsername: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId! as string);
+
+    const existingUser = await prisma.users.findUnique({
+      where: { telegramId: userId },
+    });
+    if (!existingUser) {
+      res.json({ error: "User not found" });
+      return;
+    }
+    res.json(existingUser.username);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
  * /user/overall-leaderboard:
  *   get:
  *     summary: Get Overall Leaderboard
