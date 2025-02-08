@@ -29,6 +29,7 @@ const prisma = new PrismaClient();
  *         - taskScore
  *         - inviteScore
  *         - taskCompleted
+ *         - onceTaskCompleted
  *       properties:
  *         id:
  *           type: integer
@@ -45,6 +46,8 @@ const prisma = new PrismaClient();
  *         inviteScore:
  *           type: integer
  *         taskCompleted:
+ *           type: array
+ *         onceTaskCompleted:
  *           type: array
  */
 
@@ -99,7 +102,6 @@ export const getUserProfile: RequestHandler = async (req, res) => {
       where: { id: userId },
     });
 
-    // const user = await resetDailyTasks(userId);
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -112,9 +114,48 @@ export const getUserProfile: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
+ * /user/overall-leaderboard:
+ *   get:
+ *     summary: Get Overall Leaderboard
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Leaderboard data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               $ref: '#/components/schemas/User'
+ */
+export const getOverallLeaderboard: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId! as string);
+
+    const users = await prisma.users.findMany({
+      select: { id: true, username: true, totalScore: true, telegramId: true },
+      orderBy: { totalScore: "desc" },
+    });
+
+    const leaderboard = users.map((user, index) => ({
+      ...user,
+      rank: index + 1,
+    }));
+
+    const userPosition = leaderboard.find((user) => user.id === userId);
+
+    res.json({ currentUser: userPosition, leaderboard });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
  * /user/leaderboard:
  *   get:
- *     summary: Get Leaderboard
+ *     summary: Get Weekly Leaderboard
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -132,8 +173,8 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
     const userId = parseInt(req.userId! as string);
 
     const users = await prisma.users.findMany({
-      select: { id: true, username: true, totalScore: true, telegramId: true },
-      orderBy: { totalScore: "desc" },
+      select: { id: true, username: true, taskScore: true, telegramId: true },
+      orderBy: { taskScore: "desc" },
     });
 
     const leaderboard = users.map((user, index) => ({
@@ -227,23 +268,147 @@ export const completeTask: RequestHandler = async (req, res) => {
     const isTaskCompleted =
       task.type === "DAILY"
         ? user.taskCompleted.find((id) => id === taskId)
-        : user.taskCompleted.find((id) => id === taskId);
+        : user.onceTaskCompleted.find((id) => id === taskId);
     if (isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
     }
 
-    const updatedUser = await prisma.users.update({
-      where: { id: userId },
-      data: {
-        taskScore: user.taskScore + task.points,
-        totalScore: user.totalScore + task.points,
-        taskCompleted: {
-          push: taskId,
+    if (task.type === "DAILY") {
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          taskScore: user.taskScore + task.points,
+          totalScore: user.totalScore + task.points,
+          taskCompleted: {
+            push: taskId,
+          },
         },
+      });
+      res.json(updatedUser);
+    } else {
+      const updatedUser = await prisma.users.update({
+        where: { id: userId },
+        data: {
+          taskScore: user.taskScore + task.points,
+          totalScore: user.totalScore + task.points,
+          onceTaskCompleted: {
+            push: taskId,
+          },
+        },
+      });
+      res.json(updatedUser);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /users/reset-score:
+ *   post:
+ *     summary: Reset task score for all users
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Task scores reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 count:
+ *                   type: integer
+ */
+export const resetTaskScore: RequestHandler = async (req, res) => {
+  try {
+    const result = await prisma.users.updateMany({
+      data: {
+        taskScore: 0,
+        taskCompleted: [],
       },
     });
-    res.json(updatedUser);
+    res.json({
+      message: "Task scores reset successfully",
+      count: result.count,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /user/reward-inviter/{inviterId}:
+ *   post:
+ *     summary: Reward user for inviting another user
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: inviterId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Telegram ID of the inviter
+ *     responses:
+ *       200:
+ *         description: Inviter rewarded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 inviter:
+ *                   $ref: '#/components/schemas/User'
+ */
+export const rewardInviter: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId!);
+    const inviterId = parseInt(req.params.inviterId);
+
+    const [user, inviter] = await Promise.all([
+      prisma.users.findUnique({ where: { id: userId } }),
+      prisma.users.findUnique({ where: { telegramId: inviterId } }),
+    ]);
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+    }
+    if (!inviter) {
+      res.status(404).json({ error: "Inviter not found" });
+    }
+
+    if (inviter && user) {
+      if (inviter.Invitees.includes(user.telegramId)) {
+        res.status(400).json({ error: "User already invited" });
+      } else {
+        const updatedInviter = await prisma.users.update({
+          where: { id: inviter.id },
+          data: {
+            inviteScore: {
+              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+            },
+            totalScore: {
+              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+            },
+            Invitees: { push: user.telegramId },
+          },
+        });
+        res.json({
+          message: "Inviter rewarded successfully",
+          inviter: updatedInviter,
+        });
+      }
+    }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -329,115 +494,6 @@ export const updateUserName: RequestHandler = async (req, res) => {
     });
 
     res.json(user);
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /users/reset-score:
- *   post:
- *     summary: Reset task score for all users
- *     tags: [User - Admin]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Task scores reset successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 count:
- *                   type: integer
- */
-export const resetTaskScore: RequestHandler = async (req, res) => {
-  try {
-    const result = await prisma.users.updateMany({
-      data: {
-        taskScore: 0,
-      },
-    });
-    res.json({
-      message: "Task scores reset successfully",
-      count: result.count,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /user/reward-inviter/{inviterId}:
- *   post:
- *     summary: Reward user for inviting another user
- *     tags: [User - User]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: inviterId
- *         required: true
- *         schema:
- *           type: integer
- *         description: Telegram ID of the inviter
- *     responses:
- *       200:
- *         description: Inviter rewarded successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 inviter:
- *                   $ref: '#/components/schemas/User'
- */
-export const rewardInviter: RequestHandler = async (req, res) => {
-  try {
-    const userId = parseInt(req.userId!);
-    const inviterId = parseInt(req.params.inviterId);
-
-    const [user, inviter] = await Promise.all([
-      prisma.users.findUnique({ where: { id: userId } }),
-      prisma.users.findUnique({ where: { telegramId: inviterId } }),
-    ]);
-
-    if (!user) {
-      res.status(404).json({ error: "User not found" });
-    }
-    if (!inviter) {
-      res.status(404).json({ error: "Inviter not found" });
-    }
-
-    if (inviter && user) {
-      if (inviter.Invitees.includes(user.telegramId)) {
-        res.status(400).json({ error: "User already invited" });
-      } else {
-        const updatedInviter = await prisma.users.update({
-          where: { id: inviter.id },
-          data: {
-            inviteScore: {
-              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
-            },
-            totalScore: {
-              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
-            },
-            Invitees: { push: user.telegramId },
-          },
-        });
-        res.json({
-          message: "Inviter rewarded successfully",
-          inviter: updatedInviter,
-        });
-      }
-    }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
