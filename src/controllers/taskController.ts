@@ -58,12 +58,14 @@ const prisma = new PrismaClient();
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getAllTasks: RequestHandler = async (req, res) => {
+export const getAllTasks: RequestHandler = async (req, res): Promise<void> => {
   try {
     const tasks = await prisma.tasks.findMany();
     res.json(tasks);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -91,17 +93,20 @@ export const getAllTasks: RequestHandler = async (req, res) => {
  *       404:
  *         description: Task not found
  */
-export const getTask: RequestHandler = async (req, res) => {
+export const getTask: RequestHandler = async (req, res): Promise<void> => {
   try {
     const task = await prisma.tasks.findUnique({
       where: { id: Number(req.params.id) },
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });
+      return;
     }
     res.json(task);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -123,7 +128,10 @@ export const getTask: RequestHandler = async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getDailyTasks: RequestHandler = async (req, res) => {
+export const getDailyTasks: RequestHandler = async (
+  req,
+  res
+): Promise<void> => {
   try {
     const tasks = await prisma.tasks.findMany({
       where: {
@@ -131,8 +139,10 @@ export const getDailyTasks: RequestHandler = async (req, res) => {
       },
     });
     res.json(tasks);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -154,7 +164,7 @@ export const getDailyTasks: RequestHandler = async (req, res) => {
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getOnceTasks: RequestHandler = async (req, res) => {
+export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
   try {
     const tasks = await prisma.tasks.findMany({
       where: {
@@ -162,8 +172,10 @@ export const getOnceTasks: RequestHandler = async (req, res) => {
       },
     });
     res.json(tasks);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -212,14 +224,16 @@ export const getOnceTasks: RequestHandler = async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Task'
  */
-export const createTask: RequestHandler = async (req, res) => {
+export const createTask: RequestHandler = async (req, res): Promise<void> => {
   try {
     const task = await prisma.tasks.create({
       data: req.body,
     });
     res.json(task);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -271,15 +285,17 @@ export const createTask: RequestHandler = async (req, res) => {
  *       404:
  *         description: Task not found
  */
-export const updateTask: RequestHandler = async (req, res) => {
+export const updateTask: RequestHandler = async (req, res): Promise<void> => {
   try {
     const task = await prisma.tasks.update({
       where: { id: Number(req.params.id) },
       data: req.body,
     });
     res.json(task);
+    return;
   } catch (error) {
     res.status(404).json({ error: "Task not found" });
+    return;
   }
 };
 
@@ -307,16 +323,19 @@ export const updateTask: RequestHandler = async (req, res) => {
  *       404:
  *         description: Task not found
  */
-export const deleteTask: RequestHandler = async (req, res) => {
+export const deleteTask: RequestHandler = async (req, res): Promise<void> => {
   try {
     const task = await prisma.tasks.delete({
       where: { id: Number(req.params.id) },
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });
+      return;
     }
     res.json({ message: "Task deleted successfully" });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
+    return;
   }
 };
