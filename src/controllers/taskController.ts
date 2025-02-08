@@ -62,10 +62,8 @@ export const getAllTasks: RequestHandler = async (req, res) => {
   try {
     const tasks = await prisma.tasks.findMany();
     res.json(tasks);
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };
 
@@ -100,13 +98,10 @@ export const getTask: RequestHandler = async (req, res) => {
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });
-      return;
     }
     res.json(task);
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };
 
@@ -136,10 +131,8 @@ export const getDailyTasks: RequestHandler = async (req, res) => {
       },
     });
     res.json(tasks);
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };
 
@@ -169,10 +162,8 @@ export const getOnceTasks: RequestHandler = async (req, res) => {
       },
     });
     res.json(tasks);
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };
 
@@ -227,10 +218,8 @@ export const createTask: RequestHandler = async (req, res) => {
       data: req.body,
     });
     res.json(task);
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };
 
@@ -289,10 +278,8 @@ export const updateTask: RequestHandler = async (req, res) => {
       data: req.body,
     });
     res.json(task);
-    return;
   } catch (error) {
     res.status(404).json({ error: "Task not found" });
-    return;
   }
 };
 
@@ -327,12 +314,9 @@ export const deleteTask: RequestHandler = async (req, res) => {
     });
     if (!task) {
       res.status(404).json({ error: "Task not found" });
-      return;
     }
     res.json({ message: "Task deleted successfully" });
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error" });
-    return;
   }
 };
