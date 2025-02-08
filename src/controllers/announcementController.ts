@@ -250,9 +250,7 @@ export const deleteAnnouncement: RequestHandler = async (req, res) => {
       where: { id },
     });
     res.json({ message: "Announcement deleted successfully" });
-    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
-    return;
   }
 };

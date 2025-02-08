@@ -1,6 +1,5 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
-
 import {
   verifyChannelMember,
   verifyCommunityMember,
@@ -26,6 +25,10 @@ const prisma = new PrismaClient();
  *         - username
  *         - telegramId
  *         - inviteLink
+ *         - totalScore
+ *         - taskScore
+ *         - inviteScore
+ *         - taskCompleted
  *       properties:
  *         id:
  *           type: integer
@@ -43,37 +46,6 @@ const prisma = new PrismaClient();
  *           type: integer
  *         taskCompleted:
  *           type: array
- *         onceTaskCompleted:
- *           type: array
- */
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     Task:
- *       type: object
- *       properties:
- *         id:
- *           type: integer
- *         title:
- *           type: string
- *         cta:
- *           type: string
- *           default: "Complete"
- *         description:
- *           type: string
- *           nullable: true
- *         link:
- *           type: string
- *         image:
- *           type: string
- *           nullable: true
- *         type:
- *           type: string
- *           enum: [DAILY, ONCE]
- *         points:
- *           type: integer
  */
 
 /**
@@ -132,23 +104,6 @@ export const getUserProfile: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-
-    const lastReset = new Date(user.lastResetDate);
-    const now = new Date();
-    if (
-      lastReset.getDate() !== now.getDate() ||
-      lastReset.getMonth() !== now.getMonth() ||
-      lastReset.getFullYear() !== now.getFullYear()
-    ) {
-      const updatedUser = await prisma.users.update({
-        where: { id: userId },
-        data: {
-          taskCompleted: [],
-          lastResetDate: new Date(),
-        },
-      });
-      res.json(updatedUser);
-    }
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -159,7 +114,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  * @swagger
  * /user/leaderboard:
  *   get:
- *     summary: Get Weekly Leaderboard
+ *     summary: Get Leaderboard
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -173,45 +128,6 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  *               $ref: '#/components/schemas/User'
  */
 export const getLeaderboard: RequestHandler = async (req, res) => {
-  try {
-    const userId = parseInt(req.userId! as string);
-
-    const users = await prisma.users.findMany({
-      select: { id: true, username: true, totalScore: true, telegramId: true },
-      orderBy: { taskScore: "desc" },
-    });
-
-    const leaderboard = users.map((user, index) => ({
-      ...user,
-      rank: index + 1,
-    }));
-
-    const userPosition = leaderboard.find((user) => user.id === userId);
-
-    res.json({ currentUser: userPosition, leaderboard });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /user/overall-leaderboard:
- *   get:
- *     summary: Get Overall Leaderboard
- *     tags: [User - User]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Leaderboard data
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               $ref: '#/components/schemas/User'
- */
-export const getOverallLeaderboard: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
 
@@ -311,37 +227,145 @@ export const completeTask: RequestHandler = async (req, res) => {
     const isTaskCompleted =
       task.type === "DAILY"
         ? user.taskCompleted.find((id) => id === taskId)
-        : user.onceTaskCompleted.find((id) => id === taskId);
+        : user.taskCompleted.find((id) => id === taskId);
     if (isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
     }
 
-    if (task.type === "DAILY") {
-      const updatedUser = await prisma.users.update({
-        where: { id: userId },
-        data: {
-          taskScore: user.taskScore + task.points,
-          totalScore: user.totalScore + task.points,
-          taskCompleted: {
-            push: taskId,
-          },
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        taskScore: user.taskScore + task.points,
+        totalScore: user.totalScore + task.points,
+        taskCompleted: {
+          push: taskId,
         },
-      });
-      res.json(updatedUser);
-    } else {
-      const updatedUser = await prisma.users.update({
-        where: { id: userId },
-        data: {
-          taskScore: user.taskScore + task.points,
-          totalScore: user.totalScore + task.points,
-          onceTaskCompleted: {
-            push: taskId,
-          },
-        },
-      });
-      res.json(updatedUser);
+      },
+    });
+    res.json(updatedUser);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /user/update/{userId}:
+ *   put:
+ *     summary: Update User profile
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the user to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *               totalScore:
+ *                 type: integer
+ *               taskScore:
+ *                 type: integer
+ *               inviteScore:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+export const updateUser: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId! as string);
+    const updateData = req.body;
+
+    const existingUser = await prisma.users.findUnique({
+      where: { id: userId },
+    });
+    if (!existingUser) {
+      res.json({ error: "User not found" });
+      return;
     }
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        ...updateData,
+        username: undefined,
+        id: undefined,
+        telegramId: undefined,
+        inviteLink: undefined,
+      },
+    });
+    res.json(updatedUser);
+    return;
+  } catch (error) {
+    res.json({ error: "Internal server error" });
+  }
+};
+
+export const updateUserName: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId!);
+    const { username } = req.body;
+
+    const user = await prisma.users.update({
+      where: { id: userId },
+      data: { username },
+    });
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /users/reset-score:
+ *   post:
+ *     summary: Reset task score for all users
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Task scores reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 count:
+ *                   type: integer
+ */
+export const resetTaskScore: RequestHandler = async (req, res) => {
+  try {
+    const result = await prisma.users.updateMany({
+      data: {
+        taskScore: 0,
+      },
+    });
+    res.json({
+      message: "Task scores reset successfully",
+      count: result.count,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -414,156 +438,6 @@ export const rewardInviter: RequestHandler = async (req, res) => {
         });
       }
     }
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /user/reset-score:
- *   post:
- *     summary: Reset task score for all users
- *     tags: [User - Admin]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Task scores reset successfully
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                 count:
- *                   type: integer
- */
-export const resetTaskScore: RequestHandler = async (req, res) => {
-  try {
-    const result = await prisma.users.updateMany({
-      data: {
-        taskScore: 0,
-        taskCompleted: [],
-      },
-    });
-    res.json({
-      message: "Task scores reset successfully",
-      count: result.count,
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /user/update/{userId}:
- *   put:
- *     summary: Update User profile
- *     tags: [User - Admin]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: integer
- *         description: ID of the user to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               totalScore:
- *                 type: integer
- *               taskScore:
- *                 type: integer
- *               inviteScore:
- *                 type: integer
- *     responses:
- *       200:
- *         description: User updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       404:
- *         description: User not found
- */
-export const updateUser: RequestHandler = async (req, res) => {
-  try {
-    const userId = parseInt(req.params.userId! as string);
-    const updateData = req.body;
-
-    const existingUser = await prisma.users.findUnique({
-      where: { id: userId },
-    });
-    if (!existingUser) {
-      res.json({ error: "User not found" });
-      return;
-    }
-    const updatedUser = await prisma.users.update({
-      where: { id: userId },
-      data: {
-        ...updateData,
-        username: undefined,
-        id: undefined,
-        telegramId: undefined,
-        inviteLink: undefined,
-      },
-    });
-    res.json(updatedUser);
-    return;
-  } catch (error) {
-    res.json({ error: "Internal server error" });
-  }
-};
-
-/**
- * @swagger
- * /user/update-username:
- *   put:
- *     summary: Update user's username
- *     tags: [User - User]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               username:
- *                 type: string
- *                 required: true
- *                 description: New username for the user
- *     responses:
- *       200:
- *         description: Username updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/User'
- *       500:
- *         description: Internal server error
- */
-export const updateUserName: RequestHandler = async (req, res) => {
-  try {
-    const userId = parseInt(req.userId!);
-    const { username } = req.body;
-
-    const user = await prisma.users.update({
-      where: { id: userId },
-      data: { username },
-    });
-
-    res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

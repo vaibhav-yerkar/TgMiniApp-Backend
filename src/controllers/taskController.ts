@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -58,9 +58,13 @@ const prisma = new PrismaClient();
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getAllTasks = async (req: Request, res: Response) => {
-  const tasks = await prisma.tasks.findMany();
-  res.json(tasks);
+export const getAllTasks: RequestHandler = async (req, res) => {
+  try {
+    const tasks = await prisma.tasks.findMany();
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 /**
@@ -87,7 +91,7 @@ export const getAllTasks = async (req: Request, res: Response) => {
  *       404:
  *         description: Task not found
  */
-export const getTask = async (req: Request, res: Response) => {
+export const getTask: RequestHandler = async (req, res) => {
   try {
     const task = await prisma.tasks.findUnique({
       where: { id: Number(req.params.id) },
@@ -119,7 +123,7 @@ export const getTask = async (req: Request, res: Response) => {
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getDailyTasks = async (req: Request, res: Response) => {
+export const getDailyTasks: RequestHandler = async (req, res) => {
   try {
     const tasks = await prisma.tasks.findMany({
       where: {
@@ -128,7 +132,6 @@ export const getDailyTasks = async (req: Request, res: Response) => {
     });
     res.json(tasks);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -151,7 +154,7 @@ export const getDailyTasks = async (req: Request, res: Response) => {
  *               items:
  *                 $ref: '#/components/schemas/Task'
  */
-export const getOnceTasks = async (req: Request, res: Response) => {
+export const getOnceTasks: RequestHandler = async (req, res) => {
   try {
     const tasks = await prisma.tasks.findMany({
       where: {
@@ -209,7 +212,7 @@ export const getOnceTasks = async (req: Request, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Task'
  */
-export const createTask = async (req: Request, res: Response) => {
+export const createTask: RequestHandler = async (req, res) => {
   try {
     const task = await prisma.tasks.create({
       data: req.body,
@@ -268,7 +271,7 @@ export const createTask = async (req: Request, res: Response) => {
  *       404:
  *         description: Task not found
  */
-export const updateTask = async (req: Request, res: Response) => {
+export const updateTask: RequestHandler = async (req, res) => {
   try {
     const task = await prisma.tasks.update({
       where: { id: Number(req.params.id) },
@@ -304,7 +307,7 @@ export const updateTask = async (req: Request, res: Response) => {
  *       404:
  *         description: Task not found
  */
-export const deleteTask = async (req: Request, res: Response) => {
+export const deleteTask: RequestHandler = async (req, res) => {
   try {
     const task = await prisma.tasks.delete({
       where: { id: Number(req.params.id) },

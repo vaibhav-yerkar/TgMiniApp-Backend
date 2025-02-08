@@ -115,16 +115,20 @@ export const register: RequestHandler = async (req, res) => {
  *         description: Invalid username
  */
 export const login: RequestHandler = async (req, res) => {
-  const { telegramId } = req.body;
+  try {
+    const { telegramId } = req.body;
 
-  const user = await prisma.users.findFirst({
-    where: { telegramId },
-  });
+    const user = await prisma.users.findFirst({
+      where: { telegramId },
+    });
 
-  if (!user) {
-    res.status(401).json({ error: "Invalid telegramId" });
-    return;
+    if (!user) {
+      res.status(401).json({ error: "Invalid telegramId" });
+      return;
+    }
+
+    res.json({ token: jwt.sign({ userId: user.id }, JWT_SECRET), user });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
   }
-
-  res.json({ token: jwt.sign({ userId: user.id }, JWT_SECRET), user });
 };
