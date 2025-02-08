@@ -424,14 +424,17 @@ export const rewardInviter: RequestHandler = async (req, res) => {
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
+      return;
     }
     if (!inviter) {
       res.status(404).json({ error: "Inviter not found" });
+      return;
     }
 
     if (inviter && user) {
       if (inviter.Invitees.includes(user.telegramId)) {
         res.status(400).json({ error: "User already invited" });
+        return;
       } else {
         const updatedInviter = await prisma.users.update({
           where: { id: inviter.id },
