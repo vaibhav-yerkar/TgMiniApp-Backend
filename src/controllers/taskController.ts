@@ -312,6 +312,9 @@ export const deleteTask: RequestHandler = async (req, res) => {
     const task = await prisma.tasks.delete({
       where: { id: Number(req.params.id) },
     });
+    if (!task) {
+      res.json({ message: "Task Not Found" });
+    }
     res.json({ message: "Task deleted successfully" });
   } catch (error) {
     res.status(404).json({ error: "Task not found" });
