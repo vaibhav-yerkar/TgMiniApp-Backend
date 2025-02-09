@@ -79,7 +79,7 @@ export const register: RequestHandler = async (req, res) => {
         return;
       }
     }
-    const inviteLink = `${inviteLinkBase}?start=inviter_${telegramId}`;
+    const inviteLink = `${inviteLinkBase}?startapp=inviter_${telegramId}`;
     const user = await prisma.users.create({
       data: { username, telegramId, inviteLink },
     });
