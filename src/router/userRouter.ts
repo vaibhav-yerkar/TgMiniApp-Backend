@@ -20,7 +20,7 @@ const router = express.Router();
 router.get("/profile", auth, getUserProfile);
 router.get("/leaderboard", auth, getLeaderboard);
 router.get("/overall-leaderboard", auth, getOverallLeaderboard);
-router.get("/username/:userId", auth, getUsername);
+router.get("/username/:telegramId", auth, getUsername);
 router.get("/all", adminAuth, getAllUsers);
 
 router.post("/complete-task/:taskId", auth, completeTask);

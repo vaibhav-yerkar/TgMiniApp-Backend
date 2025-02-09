@@ -114,9 +114,9 @@ export const getUserProfile: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
- * /user/username/{userId}:
+ * /user/username/{telegramId}:
  *   get:
- *     summary: Get username by user ID
+ *     summary: Get username by telegram ID
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -139,17 +139,20 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  */
 export const getUsername: RequestHandler = async (req, res) => {
   try {
-    const userId = parseInt(req.params.userId! as string);
+    const telegramId = parseInt(req.params.telegramId! as string);
 
     const existingUser = await prisma.users.findUnique({
-      where: { telegramId: userId },
+      where: {
+        telegramId: telegramId,
+      },
     });
     if (!existingUser) {
-      res.json({ error: "User not found" });
+      res.status(404).json({ error: "User not found" });
       return;
     }
     res.json(existingUser.username);
   } catch (error) {
+    console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
