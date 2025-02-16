@@ -18,7 +18,7 @@ const options = {
     },
   },
   schemes: ["http", "https"],
-  apis: ["./src/router/*.ts", "./src/controllers/*.ts"],
+  apis: ["./src/router/*.ts", "./src/controllers/*.ts", "./src/index.ts"],
 };
 
 export const swaggerSpec = swaggerJSDoc(options);
