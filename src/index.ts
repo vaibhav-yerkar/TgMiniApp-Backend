@@ -12,10 +12,14 @@ import userRouter from "./router/userRouter";
 import announcemetRouter from "./router/announcementRouter";
 
 console.log("Initailizing cron job");
-cron.schedule("0 0 * * *", () => {
-  console.log("Running cron job");
-  resetDailyTasks();
-});
+cron.schedule(
+  "0 0 * * *",
+  () => {
+    console.log("Running cron job");
+    resetDailyTasks();
+  },
+  { timezone: "IST" }
+);
 
 const app: Express = express();
 const port = process.env.PORT || 8000;
