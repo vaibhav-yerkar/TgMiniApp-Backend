@@ -116,7 +116,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  * @swagger
  * /user/username/{telegramId}:
  *   get:
- *     summary: Get username by telegram ID
+ *     summary: Get Username by telegram ID
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -126,33 +126,28 @@ export const getUserProfile: RequestHandler = async (req, res) => {
  *         required: true
  *         schema:
  *           type: integer
- *         description: telegramId of the user to get username
+ *         description: telegram ID of the user to get username
  *     responses:
  *       200:
- *         description: Username retrieved successfully
+ *         description: Username data
  *         content:
  *           application/json:
  *             schema:
  *               type: string
- *       404:
- *         description: User not found
  */
 export const getUsername: RequestHandler = async (req, res) => {
   try {
     const telegramId = parseInt(req.params.telegramId! as string);
 
     const existingUser = await prisma.users.findUnique({
-      where: {
-        telegramId: telegramId,
-      },
+      where: { telegramId: telegramId },
     });
     if (!existingUser) {
-      res.status(404).json({ error: "User not found" });
+      res.json({ error: "User not found" });
       return;
     }
     res.json(existingUser.username);
   } catch (error) {
-    console.log(error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -279,36 +274,36 @@ export const completeTask: RequestHandler = async (req, res) => {
       return;
     }
 
-    // //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
-    // if (taskId == parseInt(process.env.TELEGRAM_CHANNEL_TASK_ID as string)) {
-    //   const user = await prisma.users.findUnique({
-    //     where: { id: userId },
-    //   });
-    //   if (!user) {
-    //     res.status(404).json({ error: "User not found" });
-    //     return;
-    //   }
-    //   const isMember = await verifyChannelMember(user.username);
-    //   if (!isMember) {
-    //     res.status(400).json({ error: "User not a member of the channel" });
-    //     return;
-    //   }
-    // }
-    // //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
-    // if (taskId == parseInt(process.env.TELEGRAM_COMMUNITY_TASK_ID as string)) {
-    //   const user = await prisma.users.findUnique({
-    //     where: { id: userId },
-    //   });
-    //   if (!user) {
-    //     res.status(404).json({ error: "User not found" });
-    //     return;
-    //   }
-    //   const isMember = await verifyCommunityMember(user.username);
-    //   if (!isMember) {
-    //     res.status(400).json({ error: "User not a member of the community" });
-    //     return;
-    //   }
-    // }
+    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
+    if (taskId == parseInt(process.env.TELEGRAM_CHANNEL_TASK_ID as string)) {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const isMember = await verifyChannelMember(user.username);
+      if (!isMember) {
+        res.status(400).json({ error: "User not a member of the channel" });
+        return;
+      }
+    }
+    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
+    if (taskId == parseInt(process.env.TELEGRAM_COMMUNITY_TASK_ID as string)) {
+      const user = await prisma.users.findUnique({
+        where: { id: userId },
+      });
+      if (!user) {
+        res.status(404).json({ error: "User not found" });
+        return;
+      }
+      const isMember = await verifyCommunityMember(user.username);
+      if (!isMember) {
+        res.status(400).json({ error: "User not a member of the community" });
+        return;
+      }
+    }
 
     const isTaskCompleted =
       task.type === "DAILY"
@@ -427,21 +422,14 @@ export const rewardInviter: RequestHandler = async (req, res) => {
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
-      return;
     }
     if (!inviter) {
       res.status(404).json({ error: "Inviter not found" });
-      return;
     }
 
     if (inviter && user) {
-      if (inviter === user) {
-        res.status(400).json({ error: "User cannot invite self" });
-        return;
-      }
       if (inviter.Invitees.includes(user.telegramId)) {
         res.status(400).json({ error: "User already invited" });
-        return;
       } else {
         const updatedInviter = await prisma.users.update({
           where: { id: inviter.id },

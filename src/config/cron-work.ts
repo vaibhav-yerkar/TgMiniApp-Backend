@@ -17,7 +17,11 @@ export const resetDailyTasks = async () => {
   }
 };
 
-cron.schedule("0 0 * * *", async () => {
-  console.log("Resetting daily tasks");
-  await resetDailyTasks();
-});
+cron.schedule(
+  "0 0 * * *",
+  async () => {
+    console.log("Resetting daily tasks");
+    await resetDailyTasks();
+  },
+  { timezone: "IST" }
+);
