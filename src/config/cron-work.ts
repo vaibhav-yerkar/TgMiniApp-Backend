@@ -23,5 +23,5 @@ cron.schedule(
     console.log("Resetting daily tasks");
     await resetDailyTasks();
   },
-  { timezone: "IST" }
+  { timezone: "Asia/Kolkata" }
 );

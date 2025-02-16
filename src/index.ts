@@ -18,7 +18,7 @@ cron.schedule(
     console.log("Running cron job");
     resetDailyTasks();
   },
-  { timezone: "IST" }
+  { timezone: "Asia/Kolkata" }
 );
 
 const app: Express = express();
