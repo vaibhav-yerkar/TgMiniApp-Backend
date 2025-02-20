@@ -9,6 +9,7 @@ import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
 import authRouter from "./router/authRouter";
 import userRouter from "./router/userRouter";
+import apiRouter from "./router/apiRouter";
 import announcemetRouter from "./router/announcementRouter";
 
 console.log("Initailizing cron job");
@@ -31,31 +32,9 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World");
 });
 
-/**
- * @swagger
- * /api/keep-alive:
- *   get:
- *     summary: Keep alive endpoint
- *     tags: [Server API]
- *     description: Returns a status 200 to confirm the server is running.
- *     responses:
- *       200:
- *         description: Server is alive
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: Server is alive
- */
-app.get("/api/keep-alive", (req: Request, res: Response) => {
-  res.status(200).json({ message: "Server is alive" });
-});
-
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use("/tasks", taskRouter);
+app.use("/api", apiRouter);
 app.use("/auth", authRouter);
 app.use("/admin", adminRouter);
 app.use("/user", userRouter);

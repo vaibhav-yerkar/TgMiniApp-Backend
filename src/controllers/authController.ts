@@ -127,7 +127,26 @@ export const login: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.json({ token: jwt.sign({ userId: user.id }, JWT_SECRET), user });
+    const now = new Date();
+    const shouldReset = user.lastResetDate
+      ? now.getTime() - user.lastResetDate.getTime() > 24 * 60 * 60 * 1000
+      : true;
+
+    if (shouldReset) {
+      const updatedUser = await prisma.users.update({
+        where: { id: user.id },
+        data: {
+          taskCompleted: [],
+          lastResetDate: now,
+        },
+      });
+      res.json({
+        token: jwt.sign({ userId: updatedUser.id }, JWT_SECRET),
+        user: updatedUser,
+      });
+    } else {
+      res.json({ token: jwt.sign({ userId: user.id }, JWT_SECRET), user });
+    }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
