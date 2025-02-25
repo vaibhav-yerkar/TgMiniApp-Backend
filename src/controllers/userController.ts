@@ -1,9 +1,9 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import {
-  verifyChannelMember,
-  verifyCommunityMember,
-} from "../config/telegramBot";
+  sendNotification,
+  sendBulkNotifications,
+} from "../service/notificationService";
 
 declare global {
   namespace Express {
@@ -274,37 +274,6 @@ export const completeTask: RequestHandler = async (req, res) => {
       return;
     }
 
-    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
-    if (taskId == parseInt(process.env.TELEGRAM_CHANNEL_TASK_ID as string)) {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
-      const isMember = await verifyChannelMember(user.username);
-      if (!isMember) {
-        res.status(400).json({ error: "User not a member of the channel" });
-        return;
-      }
-    }
-    //TODO: Check if user is a member of the telegram channel (TELEGRAM_CHANNEL_TASK_ID to be implemented)
-    if (taskId == parseInt(process.env.TELEGRAM_COMMUNITY_TASK_ID as string)) {
-      const user = await prisma.users.findUnique({
-        where: { id: userId },
-      });
-      if (!user) {
-        res.status(404).json({ error: "User not found" });
-        return;
-      }
-      const isMember = await verifyCommunityMember(user.username);
-      if (!isMember) {
-        res.status(400).json({ error: "User not a member of the community" });
-        return;
-      }
-    }
-
     const isTaskCompleted =
       task.type === "DAILY"
         ? user.taskCompleted.find((id) => id === taskId)
@@ -532,6 +501,12 @@ export const updateUserName: RequestHandler = async (req, res) => {
       where: { id: userId },
       data: { username },
     });
+
+    // await sendNotification(
+    //   userId,
+    //   "Username Updated",
+    //   `Your username has been updated to ${username}`
+    // );
 
     res.json(user);
   } catch (error) {

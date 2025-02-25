@@ -1,5 +1,7 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import { sendNotification } from "../service/notificationService";
+import { db } from "../config/firebase";
 
 const prisma = new PrismaClient();
 
@@ -93,5 +95,57 @@ export const getLeaderboardCSV: RequestHandler = async (req, res) => {
     res.send(csvContent);
   } catch (err) {
     res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+/**
+ * @swagger
+ * /api/test-notification:
+ *   post:
+ *     summary: Test notification creation
+ *     tags: [API]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               message:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Test notification sent successfully
+ */
+export const testNotification: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId!);
+    const { title, message } = req.body;
+
+    await sendNotification(userId, title, message);
+
+    const notifications = await db
+      .collection("notifications")
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .limit(1)
+      .get();
+
+    const notificationData = notifications.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    res.json({
+      message: "Test notification sent successfully",
+      notification: notificationData[0],
+    });
+  } catch (error) {
+    console.error("Error in test notification:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
