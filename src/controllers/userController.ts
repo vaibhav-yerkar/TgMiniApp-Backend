@@ -286,15 +286,10 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
  *             type: object
  *             required:
  *               - taskId
- *               - status
  *             properties:
  *               taskId:
  *                 type: integer
  *                 description: ID of the task to mark
- *               status:
- *                 type: string
- *                 enum: [PENDING, COMPLETED, ADMIN_APPROVED, REJECTED]
- *                 description: Status of the task completion
  *               activity_url:
  *                 type: string
  *                 description: URL related to the activity
@@ -321,15 +316,16 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
 export const markTask: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
-    const { taskId, status, activity_url, image_url } = req.body;
+    // const { taskId, status, activity_url, image_url } = req.body;
+    const { taskId, activity_url, image_url } = req.body;
+    const status = "PENDING";
 
-    if (!taskId || !status) {
-      res.status(400).json({ error: "taskId and status are required" });
-      return;
-    }
-
-    if (!["PENDING", "COMPLETED"].includes(status)) {
-      res.status(400).json({ error: "Invalid status value" });
+    // if (!["PENDING", "COMPLETED"].includes(status)) {
+    //   res.status(400).json({ error: "Invalid status value" });
+    //   return;
+    // }
+    if (!taskId) {
+      res.status(400).json({ error: "taskId are required" });
       return;
     }
 
@@ -372,27 +368,34 @@ export const markTask: RequestHandler = async (req, res) => {
       userId: userId,
     };
 
-    let updateData: any = {};
-    if (status === "COMPLETED") {
-      updateData.taskScore = { increment: task.points };
-      updateData.totalScore = { increment: task.points };
-      if (task.type === "DAILY") {
-        updateData.taskCompleted = { push: taskIdNum };
-      } else {
-        updateData.onceTaskCompleted = { push: taskIdNum };
-      }
-    } else if (status === "PENDING") {
-      const taskComplete = await prisma.taskComplete.create({
-        data: taskData,
-      });
-      updateData.underScrutiny = {
-        connect: { id: taskComplete.id },
-      };
-    }
+    // if (status === "COMPLETED") {
+    //   updateData.taskScore = { increment: task.points };
+    //   updateData.totalScore = { increment: task.points };
+    //   if (task.type === "DAILY") {
+    //     updateData.taskCompleted = { push: taskIdNum };
+    //   } else {
+    //     updateData.onceTaskCompleted = { push: taskIdNum };
+    //   }
+    // } else if (status === "PENDING") {
+    //   const taskComplete = await prisma.taskComplete.create({
+    //     data: taskData,
+    //   });
+    //   updateData.underScrutiny = {
+    //     connect: { id: taskComplete.id },
+    //   };
+    // }
+
+    const taskComplete = await prisma.taskComplete.create({
+      data: taskData,
+    });
 
     const updatedUser = await prisma.users.update({
       where: { id: userId },
-      data: updateData,
+      data: {
+        underScrutiny: {
+          connect: { id: taskComplete.id },
+        },
+      },
       include: {
         underScrutiny: true,
       },
