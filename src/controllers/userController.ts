@@ -4,6 +4,7 @@ import {
   sendNotification,
   sendBulkNotifications,
 } from "../service/notificationService";
+import { connect } from "http2";
 
 declare global {
   namespace Express {
@@ -19,6 +20,25 @@ const prisma = new PrismaClient();
  * @swagger
  * components:
  *   schemas:
+ *     TaskComplete:
+ *       type: object
+ *       required:
+ *        - status
+ *        - taskId
+ *       properties:
+ *         id:
+ *           type: integer
+ *         status:
+ *           type: string
+ *           enum: [PENDING, COMPLETED, REJECTED, ADMIN_APPROVED]
+ *         activity_url:
+ *           type: string
+ *         image_url:
+ *           type: string
+ *         taskId:
+ *           type: integer
+ *         userId:
+ *           type: integer
  *     User:
  *       type: object
  *       required:
@@ -28,8 +48,6 @@ const prisma = new PrismaClient();
  *         - totalScore
  *         - taskScore
  *         - inviteScore
- *         - taskCompleted
- *         - onceTaskCompleted
  *       properties:
  *         id:
  *           type: integer
@@ -45,10 +63,25 @@ const prisma = new PrismaClient();
  *           type: integer
  *         inviteScore:
  *           type: integer
+ *         lastResetDate:
+ *           type: string
+ *           format: date-time
+ *         underScrutiny:
+ *           type: array
+ *           items:
+ *             $ref: '#/components/schemas/TaskComplete'
  *         taskCompleted:
  *           type: array
+ *           items:
+ *             type: integer
  *         onceTaskCompleted:
  *           type: array
+ *           items:
+ *             type: integer
+ *         Invitees:
+ *           type: array
+ *           items:
+ *             type: integer
  */
 
 /**
@@ -71,7 +104,11 @@ const prisma = new PrismaClient();
  */
 export const getAllUsers: RequestHandler = async (req, res) => {
   try {
-    const users = await prisma.users.findMany({});
+    const users = await prisma.users.findMany({
+      include: {
+        underScrutiny: true,
+      },
+    });
     res.json(users);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -100,6 +137,9 @@ export const getUserProfile: RequestHandler = async (req, res) => {
     const userId = parseInt(req.userId! as string);
     const user = await prisma.users.findUnique({
       where: { id: userId },
+      include: {
+        underScrutiny: true,
+      },
     });
 
     if (!user) {
@@ -232,9 +272,145 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
+ * /user/mark-task:
+ *   post:
+ *     summary: Mark a task with additional information
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - taskId
+ *               - status
+ *             properties:
+ *               taskId:
+ *                 type: integer
+ *                 description: ID of the task to mark
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING, COMPLETED, ADMIN_APPROVED, REJECTED]
+ *                 description: Status of the task completion
+ *               activity_url:
+ *                 type: string
+ *                 description: URL related to the activity
+ *               image_url:
+ *                 type: string
+ *                 description: URL of the uploaded image
+ *     responses:
+ *       200:
+ *         description: Task marked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 taskComplete:
+ *                   type: object
+ *       400:
+ *         description: Invalid request or task already completed
+ *       404:
+ *         description: Task or User not found
+ */
+export const markTask: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId! as string);
+    const { taskId, status, activity_url, image_url } = req.body;
+
+    if (!taskId || !status) {
+      res.status(400).json({ error: "taskId and status are required" });
+      return;
+    }
+
+    if (!["PENDING", "COMPLETED"].includes(status)) {
+      res.status(400).json({ error: "Invalid status value" });
+      return;
+    }
+
+    const taskIdNum = parseInt(taskId);
+    if (isNaN(taskIdNum)) {
+      res.status(400).json({ error: "Invalid taskId" });
+      return;
+    }
+
+    const task = await prisma.tasks.findUnique({ where: { id: taskIdNum } });
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        underScrutiny: {
+          where: { taskId: taskIdNum },
+        },
+      },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    const isTaskCompleted =
+      user.taskCompleted.includes(taskIdNum) ||
+      user.onceTaskCompleted.includes(taskIdNum);
+    if (user.underScrutiny.length > 0 || isTaskCompleted) {
+      res.status(400).json({ error: "Task already completed" });
+      return;
+    }
+
+    let taskData: any = {
+      status: status,
+      activity_url: activity_url.length > 0 ? activity_url : null,
+      image_url: image_url.length > 0 ? image_url : null,
+      taskId: taskIdNum,
+      userId: userId,
+    };
+
+    let updateData: any = {};
+    if (status === "COMPLETED") {
+      updateData.taskScore = { increment: task.points };
+      updateData.totalScore = { increment: task.points };
+      if (task.type === "DAILY") {
+        updateData.taskCompleted = { push: taskIdNum };
+      } else {
+        updateData.onceTaskCompleted = { push: taskIdNum };
+      }
+    } else if (status === "PENDING") {
+      const taskComplete = await prisma.taskComplete.create({
+        data: taskData,
+      });
+      updateData.underScrutiny = {
+        connect: { id: taskComplete.id },
+      };
+    }
+
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: updateData,
+      include: {
+        underScrutiny: true,
+      },
+    });
+    res.status(200).json({
+      message: "Task marked successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
  * /user/complete-task/{taskId}:
  *   post:
- *     summary: Complete a task
+ *     summary: Complete a marked task
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -256,6 +432,7 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
  *       404:
  *         description: Task or User not found
  */
+
 export const completeTask: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
@@ -268,6 +445,9 @@ export const completeTask: RequestHandler = async (req, res) => {
     }
     const user = await prisma.users.findUnique({
       where: { id: userId },
+      include: {
+        underScrutiny: true,
+      },
     });
     if (!user) {
       res.status(404).json({ error: "User not found" });
@@ -283,31 +463,144 @@ export const completeTask: RequestHandler = async (req, res) => {
       return;
     }
 
-    if (task.type === "DAILY") {
-      const updatedUser = await prisma.users.update({
-        where: { id: userId },
-        data: {
-          taskScore: user.taskScore + task.points,
-          totalScore: user.totalScore + task.points,
-          taskCompleted: {
-            push: taskId,
-          },
-        },
-      });
-      res.json(updatedUser);
-    } else {
-      const updatedUser = await prisma.users.update({
-        where: { id: userId },
-        data: {
-          taskScore: user.taskScore + task.points,
-          totalScore: user.totalScore + task.points,
-          onceTaskCompleted: {
-            push: taskId,
-          },
-        },
-      });
-      res.json(updatedUser);
+    const taskUnderScrutiny = user.underScrutiny.find(
+      (ts) => ts.taskId === taskId
+    );
+    if (!taskUnderScrutiny) {
+      res.status(400).json({ error: "Task not marked for review" });
+      return;
     }
+
+    if (
+      taskUnderScrutiny.status !== "ADMIN_APPROVED" &&
+      taskUnderScrutiny.status !== "COMPLETED"
+    ) {
+      res.status(400).json({ error: "Task under review is not approved yet" });
+      return;
+    }
+
+    await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
+
+    const updateData: any = {
+      taskScore: { increment: task.points },
+      totalScore: { increment: task.points },
+    };
+
+    if (task.type === "DAILY") {
+      updateData.taskCompleted = { push: taskId };
+    } else {
+      updateData.onceTaskCompleted = { push: taskId };
+    }
+
+    const updateUser = await prisma.users.update({
+      where: { id: userId },
+      data: updateData,
+      include: {
+        underScrutiny: true,
+      },
+    });
+    res.json({
+      message: "Task completed successfully",
+      user: updateUser,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error " });
+  }
+};
+
+/**
+ * @swagger
+ * /user/update-task-status:
+ *   post:
+ *     summary: Update the status of a task under review
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - taskId
+ *               - status
+ *             properties:
+ *               userId:
+ *                 type: integer
+ *                 description: ID of the user whose task will be updated
+ *               taskId:
+ *                 type: integer
+ *                 description: ID of the task to update in underScrutiny
+ *               status:
+ *                 type: string
+ *                 enum: [REJECTED, ADMIN_APPROVED]
+ *                 description: New status to set for the task
+ *     responses:
+ *       200:
+ *         description: Task status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 updatedTask:
+ *                   $ref: '#/components/schemas/TaskComplete'
+ *       400:
+ *         description: Invalid request or task not marked for review
+ *       404:
+ *         description: User not found
+ */
+export const updateTaskStatus: RequestHandler = async (req, res) => {
+  try {
+    const { userId, taskId, status } = req.body;
+
+    if (!userId || !taskId || !status) {
+      res.status(400).json({ error: "userId, taskId and status are required" });
+      return;
+    }
+
+    if (!["REJECTED", "ADMIN_APPROVED"].includes(status)) {
+      res.status(400).json({ error: "Invalid status value" });
+      return;
+    }
+
+    const userIdNum = parseInt(userId);
+    const taskIdNum = parseInt(taskId);
+    if (isNaN(userIdNum) || isNaN(taskIdNum)) {
+      res.status(400).json({ error: "Invalid userId or taskId" });
+      return;
+    }
+
+    const user = await prisma.users.findUnique({
+      where: { id: userIdNum },
+      include: { underScrutiny: true },
+    });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const taskUnderScrutiny = user.underScrutiny.find(
+      (ts) => ts.taskId === taskIdNum
+    );
+    if (!taskUnderScrutiny) {
+      res.status(400).json({ error: "Task not marked for review" });
+      return;
+    }
+
+    const updatedTask = await prisma.taskComplete.update({
+      where: { id: taskUnderScrutiny.id },
+      data: { status: status },
+    });
+
+    res.status(200).json({
+      message: "Task status updated successfully",
+      updatedTask,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -502,12 +795,6 @@ export const updateUserName: RequestHandler = async (req, res) => {
       data: { username },
     });
 
-    // await sendNotification(
-    //   userId,
-    //   "Username Updated",
-    //   `Your username has been updated to ${username}`
-    // );
-
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -553,7 +840,7 @@ export const deleteUser: RequestHandler = async (req, res) => {
       res.json({ error: "User not found" });
       return;
     }
-    const user = await prisma.users.delete({
+    prisma.users.delete({
       where: { id: userId },
     });
     res.json({ message: "User deleted successfully" });

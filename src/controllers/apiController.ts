@@ -1,6 +1,9 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
-import { sendNotification } from "../service/notificationService";
+import {
+  sendNotification,
+  markNotificationAsRead,
+} from "../service/notificationService";
 import { db } from "../config/firebase";
 
 const prisma = new PrismaClient();
@@ -103,7 +106,7 @@ export const getLeaderboardCSV: RequestHandler = async (req, res) => {
  * /api/test-notification:
  *   post:
  *     summary: Test notification creation
- *     tags: [API]
+ *     tags: [Notifications]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -146,6 +149,41 @@ export const testNotification: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in test notification:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /api/mark-read/{notificationId}:
+ *   put:
+ *     summary: Mark a notification as read
+ *     tags: [Notifications]
+ *     parameters:
+ *       - in: path
+ *         name: notificationId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the notification to mark as read
+ *     responses:
+ *       200:
+ *         description: Notification marked as read successfully
+ *       404:
+ *         description: Notification not found
+ *       500:
+ *         description: Internal server error
+ */
+export const markAsRead: RequestHandler = async (req, res) => {
+  try {
+    const notificationId = req.params.notificationId;
+    await markNotificationAsRead(notificationId);
+
+    res
+      .status(200)
+      .json({ message: "Notification marked as read successfully" });
+  } catch (error) {
+    console.error("Error in marking notification as read:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

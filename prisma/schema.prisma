@@ -4,6 +4,21 @@
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
+//////////////////////////////////////////////////////////////////////////////////////
+// taskComplete:
+// id
+// state [pending, completed, rejected]
+// activity_url?
+// image_url?
+
+// updateState-api (admin)
+// verify-user-tasks (admin)
+// notification/mark-read (auth)
+//////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,49 +28,68 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Tasks{
-  id          Int       @id @default(autoincrement())
-  title       String
-  cta         String   @default("Complete")
-  description String?
-  link        String
-  image       String?
-  type        TaskType
-  points      Int
-  isUploadRequired Boolean @default(false)
-  createadAt  DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-model Users{
-  id            Int       @id @default(autoincrement())
-  inviteLink    String    @unique
-  telegramId    Int       @unique
-  username      String    @unique
-  totalScore    Int       @default(0)
-  taskScore     Int       @default(0)
-  inviteScore   Int       @default(0)
-  lastResetDate DateTime  @default(now())
-  taskCompleted Int[]     @default([])
-  onceTaskCompleted Int[]     @default([])
-  Invitees      Int[]     @default([])
-}
-
 enum TaskType {
   DAILY
   ONCE
 }
 
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  ADMIN_APPROVED
+}
+
+model TaskComplete {
+  id               Int         @id @default(autoincrement())
+  status           TaskStatus  
+  activity_url     String?
+  image_url        String?
+  taskId           Int
+  user             Users       @relation("taskUnderScrutiny", fields: [userId], references: [id])
+  userId           Int
+}
+
+model Tasks{
+  id                Int         @id @default(autoincrement())
+  title             String
+  cta               String      @default("Complete")
+  description       String?
+  link              String
+  image             String?
+  type              TaskType
+  points            Int
+  isUploadRequired  Boolean     @default(false)
+  createadAt        DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Users{
+  id                Int         @id @default(autoincrement())
+  inviteLink        String      @unique
+  telegramId        Int         @unique
+  username          String      @unique
+  totalScore        Int         @default(0)
+  taskScore         Int         @default(0)
+  inviteScore       Int         @default(0)
+  lastResetDate     DateTime    @default(now())
+  underScrutiny     TaskComplete[]  @relation("taskUnderScrutiny")
+  taskCompleted     Int[]      @default([])
+  onceTaskCompleted Int[]       @default([])
+  Invitees          Int[]       @default([])
+}
+
 model Admin{
-  id        Int     @id @default(autoincrement())
-  username  String  @unique
-  password  String
+  id                Int         @id @default(autoincrement())
+  username          String      @unique
+  password          String
 }
 
 model Anmt{
-  id          Int @id @default(autoincrement())
-  title       String 
-  description String?
-  image       String
-  anmtTasks   Int[]
+  id                Int         @id @default(autoincrement())
+  title             String 
+  description       String?
+  image             String
+  anmtTasks         Int[]
 }
+

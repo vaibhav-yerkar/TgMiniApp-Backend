@@ -55,3 +55,17 @@ export async function sendBulkNotifications(
     throw new Error("Failed to send bulk notifications");
   }
 }
+
+export async function markNotificationAsRead(notificationId: string) {
+  try {
+    const notificationRef = db.collection("notifications").doc(notificationId);
+    if (!notificationRef) {
+      throw new Error("Notification not found");
+    }
+    await notificationRef.update({ read: true });
+    return true;
+  } catch (error) {
+    console.log("Error marking notification as read:", error);
+    throw new Error("Failed to mark notification as read");
+  }
+}

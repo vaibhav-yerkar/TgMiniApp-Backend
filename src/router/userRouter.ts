@@ -11,6 +11,8 @@ import {
   updateUserName,
   getOverallLeaderboard,
   getUsername,
+  markTask,
+  updateTaskStatus,
 } from "../controllers/userController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -23,7 +25,9 @@ router.get("/overall-leaderboard", auth, getOverallLeaderboard);
 router.get("/username/:telegramId", auth, getUsername);
 router.get("/all", adminAuth, getAllUsers);
 
+router.post("/mark-task", auth, markTask);
 router.post("/complete-task/:taskId", auth, completeTask);
+router.post("/update-task-status", adminAuth, updateTaskStatus);
 router.post("/reward-inviter/:inviterId", auth, rewardInviter);
 router.post("/update-username", auth, updateUserName);
 router.post("/reset-score", adminAuth, resetTaskScore);
