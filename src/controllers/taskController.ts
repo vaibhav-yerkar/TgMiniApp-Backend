@@ -31,6 +31,10 @@ const prisma = new PrismaClient();
  *         image:
  *           type: string
  *           nullable: true
+ *         submitType:
+ *           type: string
+ *           enum: [NONE, LINK, IMAGE, BOTH]
+ *           default: NONE
  *         type:
  *           type: string
  *           enum: [DAILY, ONCE]
@@ -209,6 +213,9 @@ export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
  *                 type: string
  *               image:
  *                 type: string
+ *               submitType:
+ *                 type: string
+ *                 enum: [NONE, LINK, IMAGE, BOTH]
  *               type:
  *                 type: string
  *                 enum: [DAILY, ONCE]
@@ -268,6 +275,9 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
  *                 type: string
  *               image:
  *                 type: string
+ *               submitType:
+ *                 type: string
+ *                 enum: [NONE, LINK, IMAGE, BOTH]
  *               type:
  *                 type: string
  *                 enum: [DAILY, ONCE]
