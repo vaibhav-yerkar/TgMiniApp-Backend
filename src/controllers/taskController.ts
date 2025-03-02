@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import { sendBulkNotifications } from "../service/notificationService";
 
 const prisma = new PrismaClient();
 
@@ -236,6 +237,14 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
     const task = await prisma.tasks.create({
       data: req.body,
     });
+
+    const users = await prisma.users.findMany({ select: { id: true } });
+    const userIds = users.map((user) => user.id);
+    const title = "New Task Available!";
+    const message =
+      "A new task is waiting for you! Complete it and earn your reward. Let's get started!";
+    await sendBulkNotifications(userIds, title, message);
+
     res.json(task);
     return;
   } catch (error) {

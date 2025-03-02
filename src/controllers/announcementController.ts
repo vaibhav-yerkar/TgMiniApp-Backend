@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
+import { sendBulkNotifications } from "../service/notificationService";
 
 const prisma = new PrismaClient();
 
@@ -139,6 +140,13 @@ export const createAnnouncement: RequestHandler = async (req, res) => {
     const announcement = await prisma.anmt.create({
       data: { title, description, image, anmtTasks: anmtTasks || [] },
     });
+
+    const users = await prisma.users.findMany({ select: { id: true } });
+    const userIds = users.map((user) => user.id);
+    const notificationTitle = "New Announcement!";
+    const message = "Check out the new announcement!";
+    await sendBulkNotifications(userIds, notificationTitle, message);
+
     res.status(201).json(announcement);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });

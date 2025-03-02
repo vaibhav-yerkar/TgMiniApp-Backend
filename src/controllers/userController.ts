@@ -404,6 +404,9 @@ export const markTask: RequestHandler = async (req, res) => {
       message: "Task marked successfully",
       user: updatedUser,
     });
+    const title = "Task Marked for Review";
+    const message = `Task "${task.title}" has been marked for review. We will notify you once it has been reviewed.`;
+    await sendNotification(userId, title, message);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -506,6 +509,10 @@ export const completeTask: RequestHandler = async (req, res) => {
       message: "Task completed successfully",
       user: updateUser,
     });
+    const title = "Task Reward Collected";
+    const message =
+      "Reward collected! Great job completing the task. Keep up the awesome work! ";
+    await sendNotification(userId, title, message);
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
   }
@@ -594,6 +601,11 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "Task not marked for review" });
       return;
     }
+    const task = await prisma.tasks.findUnique({ where: { id: taskIdNum } });
+    if (!task) {
+      res.status(404).json({ error: "Task not found" });
+      return;
+    }
 
     const updatedTask = await prisma.taskComplete.update({
       where: { id: taskUnderScrutiny.id },
@@ -604,6 +616,15 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       message: "Task status updated successfully",
       updatedTask,
     });
+    if (status === "ADMIN_APPROVED") {
+      const title = "Task has been verified by admin and ready to collect";
+      const message = `Great news! Your task "${task.title}" has been verified. Collect your reward now and celebrate!`;
+      await sendNotification(userIdNum, title, message);
+    } else {
+      const title = "Task has been rejected by admin";
+      const message = `Sad news! Your task "${task.title}" has been rejected. Please try again and submit a valid task.`;
+      await sendNotification(userIdNum, title, message);
+    }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -638,6 +659,15 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
         taskCompleted: [],
       },
     });
+    const users = await prisma.users.findMany({ select: { id: true } });
+
+    const userIds = users.map((user) => user.id);
+    const title = "Task Scores Reset";
+    const message =
+      "All task scores have been reset. Please start fresh and complete tasks to earn rewards.";
+
+    await sendBulkNotifications(userIds, title, message);
+
     res.json({
       message: "Task scores reset successfully",
       count: result.count,
@@ -708,6 +738,39 @@ export const rewardInviter: RequestHandler = async (req, res) => {
             Invitees: { push: user.telegramId },
           },
         });
+
+        let title = "A new user has joined through your referral link";
+        let message =
+          "Woohoo! A friend just joined using your referral link. Keep spreading the word and earn more rewards!";
+        await sendNotification(inviter.id, title, message);
+
+        if (inviter.Invitees.length === 5) {
+          title = "Referral milestones: 5 friends joined!";
+          message =
+            "You've got 5 friends on board! Keep inviting and unlock more rewards. You're on a roll!";
+        } else if (inviter.Invitees.length === 10) {
+          title = "Referral milestones: 10 friends joined!";
+          message =
+            "10 friends joined! You're a referral superstar. Keep it up!";
+        } else if (inviter.Invitees.length === 20) {
+          title = "Referral milestones: 20 friends joined!";
+          message = "20 friends are now part of the fun! You're unstoppable!";
+        } else if (inviter.Invitees.length === 50) {
+          title = "Referral milestones: 50 friends joined!";
+          message =
+            "50 friends?! You're a referral legend! Keep growing your squad!";
+        } else if (inviter.Invitees.length === 100) {
+          title = "Referral milestones: 100 friends joined!";
+          message =
+            "100 friends joined! You're the ultimate referral champion!";
+        } else {
+          title = "";
+          message = "";
+        }
+        if (title.length > 0 && message.length > 0) {
+          await sendNotification(inviter.id, title, message);
+        }
+
         res.json({
           message: "Inviter rewarded successfully",
           inviter: updatedInviter,

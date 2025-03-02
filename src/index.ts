@@ -3,7 +3,7 @@ import swaggerUi from "swagger-ui-express";
 import cron from "node-cron";
 import cors from "cors";
 import { swaggerSpec } from "./config/swagger";
-import { resetDailyTasks } from "./config/cron-work";
+import { resetDailyTasks, sendReminderNotifications } from "./config/cron-work";
 
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
@@ -18,6 +18,14 @@ cron.schedule(
   () => {
     console.log("Running cron job");
     resetDailyTasks();
+  },
+  { timezone: "Asia/Kolkata" }
+);
+cron.schedule(
+  "0 18 * * *",
+  async () => {
+    console.log("Sending reminder notifications");
+    await sendReminderNotifications();
   },
   { timezone: "Asia/Kolkata" }
 );

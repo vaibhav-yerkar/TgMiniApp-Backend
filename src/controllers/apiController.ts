@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import {
   sendNotification,
   markNotificationAsRead,
+  sendBulkNotifications,
 } from "../service/notificationService";
 import { db } from "../config/firebase";
 
@@ -149,6 +150,67 @@ export const testNotification: RequestHandler = async (req, res) => {
     });
   } catch (error) {
     console.error("Error in test notification:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /api/send-notification:
+ *   post:
+ *     summary: Send bulk notifications to a list of users
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - message
+ *               - userIds
+ *             properties:
+ *               userIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 description: List of user IDs to send the notification to
+ *               title:
+ *                 type: string
+ *                 description: Title of the notification
+ *               message:
+ *                 type: string
+ *                 description: Notification message
+ *     responses:
+ *       200:
+ *         description: Bulk notifications sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Bulk notifications sent successfully
+ *       400:
+ *         description: Bad request - missing or invalid inputs
+ *       500:
+ *         description: Internal server error
+ */
+export const sendNotifications: RequestHandler = async (req, res) => {
+  try {
+    const { title, message, userIds } = req.body;
+    if (!title || !message || !userIds || !Array.isArray(userIds)) {
+      res.status(400).json({ error: "Missing or invalid inputs" });
+      return;
+    }
+
+    await sendBulkNotifications(userIds, title, message);
+    res.status(200).json({ message: "Bulk notifications sent successfully" });
+  } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
 };
