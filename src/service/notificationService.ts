@@ -63,6 +63,7 @@ export async function markNotificationAsRead(notificationId: string) {
       throw new Error("Notification not found");
     }
     await notificationRef.update({ read: true });
+    await notificationRef.delete();
     return true;
   } catch (error) {
     console.log("Error marking notification as read:", error);

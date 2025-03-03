@@ -1,18 +1,20 @@
 import express from "express";
 import {
   getUserProfile,
-  completeTask,
-  getLeaderboard,
-  deleteUser,
-  updateUser,
+  fetchUserProfile,
   getAllUsers,
+  getLeaderboard,
+  getOverallLeaderboard,
+  getUnderScrutinyTasks,
+  completeTask,
+  updateUser,
   resetTaskScore,
   rewardInviter,
-  updateUserName,
-  getOverallLeaderboard,
   getUsername,
   markTask,
   updateTaskStatus,
+  updateUserName,
+  deleteUser,
 } from "../controllers/userController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -20,10 +22,12 @@ import { adminAuth } from "../middleware/admin";
 const router = express.Router();
 
 router.get("/profile", auth, getUserProfile);
+router.get("/fetch-profile/:userId", adminAuth, fetchUserProfile);
 router.get("/all", adminAuth, getAllUsers);
 router.get("/username/:telegramId", auth, getUsername);
 router.get("/leaderboard", auth, getLeaderboard);
 router.get("/overall-leaderboard", auth, getOverallLeaderboard);
+router.get("/under-review", adminAuth, getUnderScrutinyTasks);
 
 router.post("/mark-task", auth, markTask);
 router.post("/complete-task/:taskId", auth, completeTask);

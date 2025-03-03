@@ -154,6 +154,50 @@ export const getUserProfile: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
+ * /user/fetch-profile/{userId}:
+ *   get:
+ *     summary: Get User profile Admin
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: user ID of the user to get user profile
+ *     responses:
+ *       200:
+ *         description: User profile data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *               type: array
+ */
+export const fetchUserProfile: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.params.userId! as string);
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      include: {
+        underScrutiny: true,
+      },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
  * /user/username/{telegramId}:
  *   get:
  *     summary: Get Username by telegram ID
@@ -267,6 +311,60 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
     res.json({ currentUser: userPosition, leaderboard });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+/**
+ * @swagger
+ * /user/under-review:
+ *   get:
+ *     summary: Get all tasks under scrutiny
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all tasks under scrutiny
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       underScrutiny:
+ *                         type: array
+ *                         items:
+ *                           $ref: '#/components/schemas/TaskComplete'
+ *       500:
+ *         description: Internal server error
+ */
+export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
+  try {
+    let users = await prisma.users.findMany({
+      select: { underScrutiny: true, telegramId: true },
+    });
+
+    users = users.filter((user) => user.underScrutiny.length > 0);
+
+    let tasks = users.flatMap((user) =>
+      user.underScrutiny.map((task) => ({
+        ...task,
+        telegramId: user.telegramId,
+      }))
+    );
+
+    tasks.sort(
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+
+    res.status(200).json({ tasks: tasks });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error " });
   }
 };
 
@@ -611,6 +709,18 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       where: { id: taskUnderScrutiny.id },
       data: { status: status },
     });
+
+    if (status === "REJECTED") {
+      await prisma.users.update({
+        where: { id: userIdNum },
+        data: {
+          underScrutiny: {
+            disconnect: { id: taskUnderScrutiny.id },
+          },
+        },
+      });
+      await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
+    }
 
     res.status(200).json({
       message: "Task status updated successfully",

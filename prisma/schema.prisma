@@ -55,6 +55,7 @@ model TaskComplete {
   taskId           Int
   user             Users       @relation("taskUnderScrutiny", fields: [userId], references: [id])
   userId           Int
+  createdAt        DateTime    @default(now())
 }
 
 model Tasks{
