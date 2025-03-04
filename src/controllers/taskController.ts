@@ -41,8 +41,10 @@ const prisma = new PrismaClient();
  *           enum: [DAILY, ONCE]
  *         points:
  *           type: integer
- *         isUploadRequired:
- *           type: boolean
+ *         platform:
+ *           type: string
+ *           enum: [TELEGRAM, TWITTER, INDEPENDENT]
+ *           default: TELEGRAM
  */
 
 /**
@@ -222,8 +224,9 @@ export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
- *               isUploadRequired:
- *                 type: boolean
+ *               platform:
+ *                 type: string
+ *                 enum: [TELEGRAM, TWITTER, INDEPENDENT]
  *     responses:
  *       201:
  *         description: Task created
@@ -292,8 +295,9 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
- *               isUploadRequired:
- *                 type: boolean
+ *               platform:
+ *                 type: string
+ *                 enum: [TELEGRAM, TWITTER, INDEPENDENT]
  *     responses:
  *       200:
  *         description: Task updated
