@@ -1,4 +1,5 @@
 import TelegramBot from "node-telegram-bot-api";
+import express from "express";
 
 export const initlialiseTelegramBot = async () => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -12,7 +13,15 @@ export const initlialiseTelegramBot = async () => {
     throw new Error("COMMUNITY_CHAT_ID is missing");
   }
 
-  const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+  const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, {
+    polling: {
+      interval: 300,
+      autoStart: true,
+      params: {
+        timeout: 10,
+      },
+    },
+  });
 
   bot.on("polling_error", (error) => {
     console.error("Polling error:", error);
