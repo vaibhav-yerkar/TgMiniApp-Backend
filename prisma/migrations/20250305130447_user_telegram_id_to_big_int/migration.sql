@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Users" ALTER COLUMN "Invitees" SET DATA TYPE BIGINT[];

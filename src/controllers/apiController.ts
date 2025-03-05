@@ -7,7 +7,19 @@ import {
 } from "../service/notificationService";
 import { db } from "../config/firebase";
 
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;
+    }
+  }
+}
+
 const prisma = new PrismaClient();
+
+const safeReplacer = (_key: string, value: any) => {
+  return typeof value === "bigint" ? value.toString() : value;
+};
 
 /**
  * @swagger
@@ -78,10 +90,19 @@ export const getLeaderboardCSV: RequestHandler = async (req, res) => {
       },
     });
 
+    const usersData = JSON.parse(JSON.stringify(users, safeReplacer));
+
     const csvHeader = "Rank, Username, Task Score, Invite Score, Total Score\n";
 
-    const csvRows = users
-      .map((user, index) => {
+    interface UserData {
+      username: string;
+      taskScore: number;
+      inviteScore: number;
+      totalScore: number;
+    }
+
+    const csvRows = usersData
+      .map((user: UserData, index: number): string => {
         return `${index + 1}, ${user.username}, ${user.taskScore}, ${
           user.inviteScore
         }, ${user.totalScore}`;
@@ -144,10 +165,17 @@ export const testNotification: RequestHandler = async (req, res) => {
       ...doc.data(),
     }));
 
-    res.json({
-      message: "Test notification sent successfully",
-      notification: notificationData[0],
-    });
+    res.json(
+      JSON.parse(
+        JSON.stringify(
+          {
+            message: "Test notification sent successfully",
+            notification: notificationData[0],
+          },
+          safeReplacer
+        )
+      )
+    );
   } catch (error) {
     console.error("Error in test notification:", error);
     res.status(500).json({ error: "Internal server error" });

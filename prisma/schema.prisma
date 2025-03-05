@@ -82,16 +82,16 @@ model Tasks{
 model Users{
   id                Int         @id @default(autoincrement())
   inviteLink        String      @unique
-  telegramId        Int         @unique
+  telegramId        BigInt      @unique
   username          String      @unique
   totalScore        Int         @default(0)
   taskScore         Int         @default(0)
   inviteScore       Int         @default(0)
   lastResetDate     DateTime    @default(now())
   underScrutiny     TaskComplete[]  @relation("taskUnderScrutiny")
-  taskCompleted     Int[]      @default([])
+  taskCompleted     Int[]       @default([])
   onceTaskCompleted Int[]       @default([])
-  Invitees          Int[]       @default([])
+  Invitees          BigInt[]    @default([])
 }
 
 model Admin{

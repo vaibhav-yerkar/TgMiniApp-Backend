@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cron from "node-cron";
+import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { initlialiseTelegramBot } from "./service/telegramBotService";
@@ -31,13 +32,13 @@ cron.schedule(
   { timezone: "Asia/Kolkata" }
 );
 
+dotenv.config();
+
 const app: Express = express();
 const port = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
-
-initlialiseTelegramBot();
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello World");
@@ -50,6 +51,8 @@ app.use("/auth", authRouter);
 app.use("/admin", adminRouter);
 app.use("/user", userRouter);
 app.use("/anmt", announcemetRouter);
+
+initlialiseTelegramBot();
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);

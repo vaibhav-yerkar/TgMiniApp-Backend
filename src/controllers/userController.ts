@@ -16,6 +16,10 @@ declare global {
 
 const prisma = new PrismaClient();
 
+const safeReplacer = (_key: string, value: any) => {
+  return typeof value === "bigint" ? value.toString() : value;
+};
+
 /**
  * @swagger
  * components:
@@ -109,7 +113,7 @@ export const getAllUsers: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.json(users);
+    res.json(JSON.parse(JSON.stringify(users, safeReplacer)));
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -148,7 +152,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json(user);
+    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
@@ -193,7 +197,7 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json(user);
+    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
@@ -276,7 +280,11 @@ export const getOverallLeaderboard: RequestHandler = async (req, res) => {
 
     const userPosition = leaderboard.find((user) => user.id === userId);
 
-    res.json({ currentUser: userPosition, leaderboard });
+    res.json(
+      JSON.parse(
+        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
+      )
+    );
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -317,7 +325,11 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
 
     const userPosition = leaderboard.find((user) => user.id === userId);
 
-    res.json({ currentUser: userPosition, leaderboard });
+    res.json(
+      JSON.parse(
+        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
+      )
+    );
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -373,7 +385,9 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    res.status(200).json({ tasks: tasks });
+    res
+      .status(200)
+      .json(JSON.parse(JSON.stringify({ tasks: tasks }, safeReplacer)));
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
@@ -469,10 +483,10 @@ export const markTask: RequestHandler = async (req, res) => {
         verifyed = false;
         let bot_token;
         let chat_id;
-        if (task.description?.includes("community")) {
+        if (task.description?.toLowerCase().includes("community")) {
           bot_token = process.env.TELEGRAM_BOT_TOKEN;
           chat_id = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
-        } else if (task.description?.includes("announcement")) {
+        } else if (task.description?.toLowerCase().includes("announcement")) {
           bot_token = process.env.TELEGRAM_BOT_TOKEN;
           chat_id = process.env.TELEGRAM_ANNOUNCEMENT_CHAT_ID;
         }
@@ -508,10 +522,17 @@ export const markTask: RequestHandler = async (req, res) => {
           underScrutiny: true,
         },
       });
-      res.json({
-        message: "Task completed successfully",
-        user: updateUser,
-      });
+      res.status(200).json(
+        JSON.parse(
+          JSON.stringify(
+            {
+              message: "Task completed successfully",
+              user: updateUser,
+            },
+            safeReplacer
+          )
+        )
+      );
       const title = "Task Completed Successfully";
       const message =
         "Reward collected! Great job completing the task. Keep up the awesome work!";
@@ -550,10 +571,17 @@ export const markTask: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.status(200).json({
-      message: "Task marked successfully",
-      user: updatedUser,
-    });
+    res.status(200).json(
+      JSON.parse(
+        JSON.stringify(
+          {
+            message: "Task marked successfully",
+            user: updatedUser,
+          },
+          safeReplacer
+        )
+      )
+    );
     const title = "Task Marked for Review";
     const message = `Task "${task.title}" has been marked for review. We will notify you once it has been reviewed.`;
     await sendNotification(userId, title, message);
@@ -657,10 +685,17 @@ export const completeTask: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.json({
-      message: "Task completed successfully",
-      user: updateUser,
-    });
+    res.json(
+      JSON.parse(
+        JSON.stringify(
+          {
+            message: "Task completed successfully",
+            user: updateUser,
+          },
+          safeReplacer
+        )
+      )
+    );
     const title = "Task Reward Collected";
     const message =
       "Reward collected! Great job completing the task. Keep up the awesome work! ";
@@ -778,10 +813,17 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
     }
 
-    res.status(200).json({
-      message: "Task status updated successfully",
-      updatedTask,
-    });
+    res.status(200).json(
+      JSON.parse(
+        JSON.stringify(
+          {
+            message: "Task status updated successfully",
+            updatedTask,
+          },
+          safeReplacer
+        )
+      )
+    );
     if (status === "ADMIN_APPROVED") {
       const title = "Task has been verified by admin and ready to collect";
       const message = `Great news! Your task "${task.title}" has been verified. Collect your reward now and celebrate!`;
@@ -882,7 +924,7 @@ export const rewardInviter: RequestHandler = async (req, res) => {
 
     const [user, inviter] = await Promise.all([
       prisma.users.findUnique({ where: { id: userId } }),
-      prisma.users.findUnique({ where: { telegramId: inviterId } }),
+      prisma.users.findUnique({ where: { telegramId: BigInt(inviterId) } }),
     ]);
 
     if (!user) {
@@ -944,10 +986,17 @@ export const rewardInviter: RequestHandler = async (req, res) => {
           await sendNotification(inviter.id, title, message);
         }
 
-        res.json({
-          message: "Inviter rewarded successfully",
-          inviter: updatedInviter,
-        });
+        res.json(
+          JSON.parse(
+            JSON.stringify(
+              {
+                message: "Inviter rewarded successfully",
+                inviter: updatedInviter,
+              },
+              safeReplacer
+            )
+          )
+        );
         return;
       }
     }
@@ -1019,7 +1068,7 @@ export const updateUser: RequestHandler = async (req, res) => {
         inviteLink: undefined,
       },
     });
-    res.json(updatedUser);
+    res.json(JSON.parse(JSON.stringify(updatedUser, safeReplacer)));
     return;
   } catch (error) {
     res.json({ error: "Internal server error" });
@@ -1037,7 +1086,7 @@ export const updateUserName: RequestHandler = async (req, res) => {
       data: { username },
     });
 
-    res.json(user);
+    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
