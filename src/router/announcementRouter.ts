@@ -16,8 +16,8 @@ router.get("/", authOrAdmin, getAnnouncements);
 router.get("/:id", authOrAdmin, getAnnouncementById);
 
 router.post("/", adminAuth, createAnnouncement);
-router.put("/:id", adminAuth, updateAnnouncement);
 
+router.put("/:id", adminAuth, updateAnnouncement);
 router.delete("/:id", adminAuth, deleteAnnouncement);
 
 export default router;

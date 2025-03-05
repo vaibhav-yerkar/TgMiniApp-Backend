@@ -414,14 +414,10 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
 export const markTask: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
-    // const { taskId, status, activity_url, image_url } = req.body;
+
     const { taskId, activity_url, image_url } = req.body;
     const status = "PENDING";
 
-    // if (!["PENDING", "COMPLETED"].includes(status)) {
-    //   res.status(400).json({ error: "Invalid status value" });
-    //   return;
-    // }
     if (!taskId) {
       res.status(400).json({ error: "taskId are required" });
       return;
@@ -438,6 +434,7 @@ export const markTask: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "Task not found" });
       return;
     }
+
     const user = await prisma.users.findUnique({
       where: { id: userId },
       include: {
@@ -450,6 +447,64 @@ export const markTask: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
+
+    if (task.platform === "TWITTER" || task.platform === "TELEGRAM") {
+      let verifyed = false;
+      if (task.platform === "TWITTER") {
+        verifyed = true;
+      } else if (task.platform === "TELEGRAM") {
+        verifyed = false;
+        let bot_token;
+        let chat_id;
+        if (task.description?.includes("community")) {
+          bot_token = process.env.TELEGRAM_BOT_TOKEN;
+          chat_id = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
+        } else if (task.description?.includes("announcement")) {
+          bot_token = process.env.TELEGRAM_BOT_TOKEN;
+          chat_id = process.env.TELEGRAM_ANNOUNCEMENT_CHAT_ID;
+        }
+        const apiResponse = await fetch(
+          `https://api.telegram.org/bot${bot_token}/getChatMember?chat_id=${chat_id}&user_id=${user.telegramId}`
+        );
+
+        const data = await apiResponse.json();
+        if (data.ok) {
+          verifyed =
+            data.result.status === "member" ||
+            data.result.status === "administrator";
+        }
+      }
+      if (!verifyed) {
+        res.status(400).json({ error: "Unable to mark task as Complete" });
+        return;
+      }
+      const updateData: any = {
+        taskScore: { increment: task.points },
+        totalScore: { increment: task.points },
+      };
+      if (task.type === "DAILY") {
+        updateData.taskCompleted = { push: taskId };
+      } else {
+        updateData.onceTaskCompleted = { push: taskId };
+      }
+
+      const updateUser = await prisma.users.update({
+        where: { id: userId },
+        data: updateData,
+        include: {
+          underScrutiny: true,
+        },
+      });
+      res.json({
+        message: "Task completed successfully",
+        user: updateUser,
+      });
+      const title = "Task Completed Successfully";
+      const message =
+        "Reward collected! Great job completing the task. Keep up the awesome work!";
+      await sendNotification(userId, title, message);
+    }
+
     const isTaskCompleted =
       user.taskCompleted.includes(taskIdNum) ||
       user.onceTaskCompleted.includes(taskIdNum);
@@ -465,23 +520,6 @@ export const markTask: RequestHandler = async (req, res) => {
       taskId: taskIdNum,
       userId: userId,
     };
-
-    // if (status === "COMPLETED") {
-    //   updateData.taskScore = { increment: task.points };
-    //   updateData.totalScore = { increment: task.points };
-    //   if (task.type === "DAILY") {
-    //     updateData.taskCompleted = { push: taskIdNum };
-    //   } else {
-    //     updateData.onceTaskCompleted = { push: taskIdNum };
-    //   }
-    // } else if (status === "PENDING") {
-    //   const taskComplete = await prisma.taskComplete.create({
-    //     data: taskData,
-    //   });
-    //   updateData.underScrutiny = {
-    //     connect: { id: taskComplete.id },
-    //   };
-    // }
 
     const taskComplete = await prisma.taskComplete.create({
       data: taskData,
