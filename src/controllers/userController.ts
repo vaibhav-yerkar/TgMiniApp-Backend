@@ -587,7 +587,7 @@ export const markTask: RequestHandler = async (req, res) => {
     await sendNotification(userId, title, message);
     return;
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error " + `${error}` });
     return;
   }
 };
@@ -802,14 +802,6 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     });
 
     if (status === "REJECTED") {
-      await prisma.users.update({
-        where: { id: userIdNum },
-        data: {
-          underScrutiny: {
-            disconnect: { id: taskUnderScrutiny.id },
-          },
-        },
-      });
       await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
     }
 
@@ -835,7 +827,7 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     }
     return;
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error " + `${error}` });
     return;
   }
 };
