@@ -1,8 +1,9 @@
 import express, { Express, Request, Response, NextFunction } from "express";
-import swaggerUi from "swagger-ui-express";
-import cron from "node-cron";
 import cors from "cors";
+import cron from "node-cron";
+import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
+import { initlialiseTelegramBot } from "./service/telegramBotService";
 import { resetDailyTasks, sendReminderNotifications } from "./config/cron-work";
 
 import adminRouter from "./router/adminRouter";
@@ -35,6 +36,8 @@ const port = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
+
+initlialiseTelegramBot();
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello World");
