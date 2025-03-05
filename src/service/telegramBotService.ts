@@ -13,6 +13,10 @@ if (!COMMUNITY_CHAT_ID) {
 
 const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
 
+bot.on("polling_error", (error) => {
+  console.error("Polling error:", error);
+});
+
 export const initlialiseTelegramBot = async () => {
   if (!TELEGRAM_BOT_USERNAME) {
     const me = await bot.getMe();
@@ -22,9 +26,9 @@ export const initlialiseTelegramBot = async () => {
   bot.on("message", (msg) => {
     const chatId = msg.chat.id;
 
-    if (chatId.toString() !== COMMUNITY_CHAT_ID) {
-      return;
-    }
+    // if (chatId.toString() !== COMMUNITY_CHAT_ID) {
+    //   return;
+    // }
 
     const text = msg.text || "";
 
