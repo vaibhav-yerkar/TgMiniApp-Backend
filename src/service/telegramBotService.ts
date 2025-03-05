@@ -15,7 +15,7 @@ export const initlialiseTelegramBot = async () => {
 
   const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, {
     polling: {
-      interval: 300,
+      interval: 3000,
       autoStart: true,
       params: {
         timeout: 10,
