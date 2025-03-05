@@ -110,8 +110,10 @@ export const getAllUsers: RequestHandler = async (req, res) => {
       },
     });
     res.json(users);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -149,6 +151,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -193,6 +196,7 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
     res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -226,13 +230,16 @@ export const getUsername: RequestHandler = async (req, res) => {
     const existingUser = await prisma.users.findUnique({
       where: { telegramId: telegramId },
     });
+
     if (!existingUser) {
       res.json({ error: "User not found" });
       return;
     }
     res.json(existingUser.username);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -270,8 +277,10 @@ export const getOverallLeaderboard: RequestHandler = async (req, res) => {
     const userPosition = leaderboard.find((user) => user.id === userId);
 
     res.json({ currentUser: userPosition, leaderboard });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -309,8 +318,10 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
     const userPosition = leaderboard.find((user) => user.id === userId);
 
     res.json({ currentUser: userPosition, leaderboard });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -363,8 +374,10 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
     );
 
     res.status(200).json({ tasks: tasks });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
+    return;
   }
 };
 
@@ -503,6 +516,7 @@ export const markTask: RequestHandler = async (req, res) => {
       const message =
         "Reward collected! Great job completing the task. Keep up the awesome work!";
       await sendNotification(userId, title, message);
+      return;
     }
 
     const isTaskCompleted =
@@ -543,8 +557,10 @@ export const markTask: RequestHandler = async (req, res) => {
     const title = "Task Marked for Review";
     const message = `Task "${task.title}" has been marked for review. We will notify you once it has been reviewed.`;
     await sendNotification(userId, title, message);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -649,8 +665,10 @@ export const completeTask: RequestHandler = async (req, res) => {
     const message =
       "Reward collected! Great job completing the task. Keep up the awesome work! ";
     await sendNotification(userId, title, message);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
+    return;
   }
 };
 
@@ -773,8 +791,10 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       const message = `Sad news! Your task "${task.title}" has been rejected. Please try again and submit a valid task.`;
       await sendNotification(userIdNum, title, message);
     }
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -820,8 +840,10 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
       message: "Task scores reset successfully",
       count: result.count,
     });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -865,14 +887,17 @@ export const rewardInviter: RequestHandler = async (req, res) => {
 
     if (!user) {
       res.status(404).json({ error: "User not found" });
+      return;
     }
     if (!inviter) {
       res.status(404).json({ error: "Inviter not found" });
+      return;
     }
 
     if (inviter && user) {
       if (inviter.Invitees.includes(user.telegramId)) {
         res.status(400).json({ error: "User already invited" });
+        return;
       } else {
         const updatedInviter = await prisma.users.update({
           where: { id: inviter.id },
@@ -923,10 +948,12 @@ export const rewardInviter: RequestHandler = async (req, res) => {
           message: "Inviter rewarded successfully",
           inviter: updatedInviter,
         });
+        return;
       }
     }
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -996,6 +1023,7 @@ export const updateUser: RequestHandler = async (req, res) => {
     return;
   } catch (error) {
     res.json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -1010,8 +1038,10 @@ export const updateUserName: RequestHandler = async (req, res) => {
     });
 
     res.json(user);
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
 
@@ -1058,7 +1088,9 @@ export const deleteUser: RequestHandler = async (req, res) => {
       where: { id: userId },
     });
     res.json({ message: "User deleted successfully" });
+    return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
   }
 };
