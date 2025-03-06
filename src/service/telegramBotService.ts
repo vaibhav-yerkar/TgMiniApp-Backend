@@ -152,7 +152,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       return;
     }
 
-    if (text.startsWith("/start")) {
+    if (text.includes("/start")) {
       if (TELEGRAM_MINI_APP) {
         bot.sendMessage(
           chatId,
@@ -180,7 +180,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /leaderboard
-    if (text.startsWith("/leaderboard")) {
+    if (text.includes("/leaderboard")) {
       if (userId) {
         const leaderboardText = await formatLeaderBoard(userId);
         bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
@@ -191,7 +191,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /task or /tasks
-    if (text.startsWith("/task")) {
+    if (text.includes("/task")) {
       const tasksText = await getRecentTasks();
       bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
       return;
