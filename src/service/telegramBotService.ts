@@ -1,5 +1,8 @@
 import TelegramBot from "node-telegram-bot-api";
 import express from "express";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 export const initlialiseTelegramBot = async (app?: express.Express) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -7,6 +10,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   const COMMUNITY_CHAT_ID = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
   const WEBHOOK_URL = process.env.WEBHOOK_URL;
   const isProduction = process.env.NODE_ENV === "production";
+  const TELEGRAM_MINI_APP = process.env.TELEGRAM_MINI_APP;
 
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is missing");
@@ -31,8 +35,6 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       res.sendStatus(200);
     });
     console.log("Telegram bot is running in production mode");
-    const webhookInfo = await bot.getWebHookInfo();
-    console.log("Current webhook info:", webhookInfo);
   } else {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN, {
       polling: {
@@ -61,21 +63,146 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
   }
 
-  bot.on("message", (msg) => {
-    const chatId = msg.chat.id;
+  // Helper Functions ----------------------------------
 
+  const formatLeaderBoard = async (telegramId: number): Promise<string> => {
+    try {
+      const currentUser = await prisma.users.findUnique({
+        where: { telegramId: BigInt(telegramId) },
+        select: { username: true, totalScore: true },
+      });
+      if (!currentUser) {
+        return "You are not registered in our system";
+      }
+
+      const topUsers = await prisma.users.findMany({
+        select: { username: true, totalScore: true, telegramId: true },
+        orderBy: { totalScore: "desc" },
+        take: 3,
+      });
+      const allUsers = await prisma.users.findMany({
+        select: { id: true, totalScore: true },
+        orderBy: { totalScore: "desc" },
+      });
+      const userRank =
+        allUsers.findIndex((u) => u.totalScore <= currentUser.totalScore) + 1;
+
+      return (
+        "🏆 *Leaderboard* 🏆\n\n" +
+        topUsers
+          .map(
+            (user, index) =>
+              `${index + 1}. ${user.username} - ${user.totalScore} points`
+          )
+          .join("\n") +
+        `\n\n🎯 *Your Position*: #${userRank} with ${currentUser.totalScore} points`
+      );
+    } catch (err) {
+      return "Sorry, I am unable to fetch the leaderboard at the moment. Please try again later.";
+    }
+  };
+
+  const getRecentTasks = async (): Promise<string> => {
+    try {
+      const fourDaysAgo = new Date();
+      fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
+
+      const tasks = await prisma.tasks.findMany({
+        where: { createadAt: { gte: fourDaysAgo } },
+        orderBy: { createadAt: "desc" },
+      });
+
+      if (tasks.length === 0) {
+        return "No recent tasks available";
+      }
+
+      return (
+        "📋 *Recent Tasks* 📋\n\n" +
+        tasks
+          .map(
+            (task, index) =>
+              `${index + 1}. *${task.title}* (${task.points} pts)\n   ${
+                task.description || "No description"
+              }\n   Type: ${task.type}\n`
+          )
+          .join("\n")
+      );
+    } catch (err) {
+      return "Sorry, I couldn't fetch the recent tasks at the moment. Please try again later.";
+    }
+  };
+  // ---------------------------------------------------
+
+  bot.on("message", async (msg) => {
+    const chatId = msg.chat.id;
     // if (chatId.toString() !== COMMUNITY_CHAT_ID) {
     //   return;
     // }
-
     const text = msg.text || "";
+    const userId = msg.from?.id;
+    const username = msg.from?.username || "there";
+    const firstName = msg.from?.first_name || username;
 
-    if (
+    const isBotMentioned =
       TELEGRAM_BOT_USERNAME &&
-      text.toLowerCase().includes(`@${TELEGRAM_BOT_USERNAME.toLowerCase()}`)
-    ) {
-      bot.sendMessage(chatId, "Hello! How can I help you today?");
+      (text.toLowerCase().includes(`@${TELEGRAM_BOT_USERNAME.toLowerCase()}`) ||
+        text.match(new RegExp(`\\/\\w+@${TELEGRAM_BOT_USERNAME}`, "i")));
+
+    if (!isBotMentioned) {
+      return;
     }
+
+    if (text.startsWith("/start")) {
+      if (TELEGRAM_MINI_APP) {
+        bot.sendMessage(
+          chatId,
+          `Welcome ${firstName}! Let's get you started with our Mini App.`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "🚀 Open Mini App",
+                    web_app: { url: TELEGRAM_MINI_APP },
+                  },
+                ],
+              ],
+            },
+          }
+        );
+      } else {
+        bot.sendMessage(
+          chatId,
+          `Welcome ${firstName}! Unfortunately, the Mini App URL is not configured.`
+        );
+      }
+      return;
+    }
+
+    // Command: /leaderboard
+    if (text.startsWith("/leaderboard")) {
+      if (userId) {
+        const leaderboardText = await formatLeaderBoard(userId);
+        bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
+      } else {
+        bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+      }
+      return;
+    }
+
+    // Command: /task or /tasks
+    if (text.startsWith("/task")) {
+      const tasksText = await getRecentTasks();
+      bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
+      return;
+    }
+
+    const commandsList =
+      `Hello ${firstName}! Here are the available commands:\n\n` +
+      `/start - Open the Mini App\n` +
+      `/leaderboard - View the current leaderboard\n` +
+      `/tasks - See recent tasks`;
+    bot.sendMessage(chatId, commandsList);
   });
 
   return bot;
