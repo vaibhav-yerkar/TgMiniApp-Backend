@@ -52,7 +52,9 @@ app.use("/admin", adminRouter);
 app.use("/user", userRouter);
 app.use("/anmt", announcemetRouter);
 
-initlialiseTelegramBot();
+initlialiseTelegramBot(app).catch((err) => {
+  console.error("Error in initialising telegram bot:", err);
+});
 
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
