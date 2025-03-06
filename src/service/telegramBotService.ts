@@ -57,9 +57,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   bot.on("message", (msg) => {
     const chatId = msg.chat.id;
 
-    if (chatId.toString() !== COMMUNITY_CHAT_ID) {
-      return;
-    }
+    // if (chatId.toString() !== COMMUNITY_CHAT_ID) {
+    //   return;
+    // }
 
     const text = msg.text || "";
 
