@@ -20,12 +20,19 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   if (isProduction && WEBHOOK_URL && app) {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: false });
 
-    await bot.setWebHook(`${WEBHOOK_URL}/telegram-bot`);
-    app.post(`/bot${TELEGRAM_BOT_TOKEN}`, (req, res) => {
+    const webhookPath = `/bot${TELEGRAM_BOT_TOKEN}`;
+    const webhookUrl = `${WEBHOOK_URL}${webhookPath}`;
+
+    await bot.setWebHook(webhookUrl);
+    console.log("Webhook set:", webhookUrl);
+
+    app.post(webhookPath, (req, res) => {
       bot.processUpdate(req.body);
       res.sendStatus(200);
     });
     console.log("Telegram bot is running in production mode");
+    const webhookInfo = await bot.getWebHookInfo();
+    console.log("Current webhook info:", webhookInfo);
   } else {
     bot = new TelegramBot(TELEGRAM_BOT_TOKEN, {
       polling: {

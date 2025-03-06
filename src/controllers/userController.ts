@@ -1133,6 +1133,9 @@ export const deleteUser: RequestHandler = async (req, res) => {
       res.json({ error: "User not found" });
       return;
     }
+    await prisma.taskComplete.deleteMany({
+      where: { userId: userId },
+    });
     await prisma.users.delete({
       where: { id: userId },
     });
