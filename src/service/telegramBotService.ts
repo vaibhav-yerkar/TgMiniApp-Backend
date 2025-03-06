@@ -65,6 +65,17 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
   // Helper Functions ----------------------------------
 
+  const escapeMarkdown = (text: string): string => {
+    return text
+      .replace(/_/g, "\\_")
+      .replace(/\*/g, "\\*")
+      .replace(/\[/g, "\\[")
+      .replace(/\]/g, "\\]")
+      .replace(/\(/g, "\\(")
+      .replace(/\)/g, "\\)")
+      .replace(/`/g, "\\`");
+  };
+
   const formatLeaderBoard = async (telegramId: number): Promise<string> => {
     try {
       const currentUser = await prisma.users.findUnique({
@@ -92,10 +103,14 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
         topUsers
           .map(
             (user, index) =>
-              `${index + 1}. ${user.username} - ${user.totalScore} points`
+              `${index + 1}. ${escapeMarkdown(user.username)} - ${
+                user.totalScore
+              } points`
           )
           .join("\n") +
-        `\n\n🎯 *Your Position*: #${userRank} with ${currentUser.totalScore} points`
+        `\n\n🎯 *Your Position*: #${userRank} ${escapeMarkdown(
+          currentUser.username
+        )} with ${currentUser.totalScore} points`
       );
     } catch (err) {
       return "Sorry, I am unable to fetch the leaderboard at the moment. Please try again later.";
@@ -121,9 +136,13 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
         tasks
           .map(
             (task, index) =>
-              `${index + 1}. *${task.title}* (${task.points} pts)\n   ${
-                task.description || "No description"
-              }\n   Type: ${task.type}\n`
+              `${index + 1}. *${escapeMarkdown(task.title)}* (${
+                task.points
+              } pts)\n   ${
+                task.description
+                  ? escapeMarkdown(task.description)
+                  : "No description"
+              }\n   Type: ${escapeMarkdown(task.type)}\n`
           )
           .join("\n")
       );
@@ -156,7 +175,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       if (TELEGRAM_MINI_APP) {
         bot.sendMessage(
           chatId,
-          `Welcome ${firstName}! Let's get you started with our Mini App.`,
+          `Welcome ${escapeMarkdown(
+            firstName
+          )}! Let's get you started with our Mini App.`,
           {
             reply_markup: {
               inline_keyboard: [
@@ -173,7 +194,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       } else {
         bot.sendMessage(
           chatId,
-          `Welcome ${firstName}! Unfortunately, the Mini App URL is not configured.`
+          `Welcome ${escapeMarkdown(
+            firstName
+          )}! Unfortunately, the Mini App URL is not configured.`
         );
       }
       return;
@@ -198,7 +221,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     const commandsList =
-      `Hello ${firstName}! Here are the available commands:\n\n` +
+      `Hello ${escapeMarkdown(
+        firstName
+      )}! Here are the available commands:\n\n` +
       `/start - Open the Mini App\n` +
       `/leaderboard - View the current leaderboard\n` +
       `/tasks - See recent tasks`;
