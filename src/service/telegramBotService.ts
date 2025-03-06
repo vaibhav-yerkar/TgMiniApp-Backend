@@ -172,34 +172,62 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     if (text.includes("/start")) {
-      if (TELEGRAM_MINI_APP) {
-        bot.sendMessage(
-          chatId,
-          `Welcome ${escapeMarkdown(
-            firstName
-          )}! Let's get you started with our Mini App.`,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [
-                  {
-                    text: "🚀 Open Mini App",
-                    web_app: { url: TELEGRAM_MINI_APP },
-                  },
-                ],
-              ],
-            },
+      try {
+        const isPrivateChat = msg.chat.type === "private";
+
+        if (TELEGRAM_MINI_APP) {
+          if (isPrivateChat) {
+            bot.sendMessage(
+              chatId,
+              `Welcome ${escapeMarkdown(
+                firstName
+              )}! Let's get you started with our Mini App.`,
+              {
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: "🚀 Open Mini App",
+                        web_app: { url: TELEGRAM_MINI_APP },
+                      },
+                    ],
+                  ],
+                },
+              }
+            );
+          } else {
+            bot.sendMessage(
+              chatId,
+              `Welcome ${escapeMarkdown(
+                firstName
+              )}! To use the Mini App, please start a private chat with me.`,
+              {
+                parse_mode: "Markdown",
+                reply_markup: {
+                  inline_keyboard: [
+                    [
+                      {
+                        text: "🚀 Start Private Chat",
+                        url: `https://t.me/${TELEGRAM_BOT_USERNAME}`,
+                      },
+                    ],
+                  ],
+                },
+              }
+            );
           }
-        );
-      } else {
-        bot.sendMessage(
-          chatId,
-          `Welcome ${escapeMarkdown(
-            firstName
-          )}! Unfortunately, the Mini App URL is not configured.`
-        );
+        } else {
+          bot.sendMessage(
+            chatId,
+            `Welcome ${escapeMarkdown(
+              firstName
+            )}! Unfortunately, the Mini App URL is not configured.`
+          );
+        }
+        return;
+      } catch (error) {
+        bot.sendMessage(chatId, "Sorry, I couldn't start the Mini App.");
       }
-      return;
     }
 
     // Command: /leaderboard
