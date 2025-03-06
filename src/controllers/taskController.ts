@@ -1,6 +1,5 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
-import { sendBulkNotifications } from "../service/notificationService";
 
 const prisma = new PrismaClient();
 
@@ -41,10 +40,8 @@ const prisma = new PrismaClient();
  *           enum: [DAILY, ONCE]
  *         points:
  *           type: integer
- *         platform:
- *           type: string
- *           enum: [TELEGRAM, TWITTER, INDEPENDENT]
- *           default: TELEGRAM
+ *         isUploadRequired:
+ *           type: boolean
  */
 
 /**
@@ -224,9 +221,8 @@ export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
- *               platform:
- *                 type: string
- *                 enum: [TELEGRAM, TWITTER, INDEPENDENT]
+ *               isUploadRequired:
+ *                 type: boolean
  *     responses:
  *       201:
  *         description: Task created
@@ -240,14 +236,6 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
     const task = await prisma.tasks.create({
       data: req.body,
     });
-
-    const users = await prisma.users.findMany({ select: { id: true } });
-    const userIds = users.map((user) => user.id);
-    const title = "New Task Available!";
-    const message =
-      "A new task is waiting for you! Complete it and earn your reward. Let's get started!";
-    await sendBulkNotifications(userIds, title, message);
-
     res.json(task);
     return;
   } catch (error) {
@@ -295,9 +283,8 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [DAILY, ONCE]
  *               points:
  *                 type: integer
- *               platform:
- *                 type: string
- *                 enum: [TELEGRAM, TWITTER, INDEPENDENT]
+ *               isUploadRequired:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Task updated

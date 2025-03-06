@@ -802,6 +802,14 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     });
 
     if (status === "REJECTED") {
+      await prisma.users.update({
+        where: { id: userIdNum },
+        data: {
+          underScrutiny: {
+            disconnect: { id: taskUnderScrutiny.id },
+          },
+        },
+      });
       await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
     }
 
@@ -827,7 +835,7 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     }
     return;
   } catch (error) {
-    res.status(500).json({ error: "Internal server error " + `${error}` });
+    res.status(500).json({ error: "Internal server error" });
     return;
   }
 };
@@ -1125,7 +1133,7 @@ export const deleteUser: RequestHandler = async (req, res) => {
       res.json({ error: "User not found" });
       return;
     }
-    prisma.users.delete({
+    await prisma.users.delete({
       where: { id: userId },
     });
     res.json({ message: "User deleted successfully" });

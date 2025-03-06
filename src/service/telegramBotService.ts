@@ -23,10 +23,6 @@ export const initlialiseTelegramBot = async () => {
     },
   });
 
-  bot.on("polling_error", (error) => {
-    console.error("Polling error:", error);
-  });
-
   if (!TELEGRAM_BOT_USERNAME) {
     const me = await bot.getMe();
     TELEGRAM_BOT_USERNAME = me.username;
