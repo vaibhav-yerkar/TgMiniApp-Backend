@@ -244,7 +244,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /task or /tasks
-    if (text_arr.includes("/task")) {
+    if (text_arr.includes("/tasks")) {
       const tasksText = await getRecentTasks();
       bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
       return;
