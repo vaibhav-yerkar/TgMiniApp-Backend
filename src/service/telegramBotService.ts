@@ -171,7 +171,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       return;
     }
 
-    if (text.includes("/start")) {
+    const text_arr = text.split(" ");
+
+    if (text_arr.includes("/start")) {
       try {
         const isPrivateChat = msg.chat.type === "private";
 
@@ -231,7 +233,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /leaderboard
-    if (text.includes("/leaderboard")) {
+    if (text_arr.includes("/leaderboard")) {
       if (userId) {
         const leaderboardText = await formatLeaderBoard(userId);
         bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
@@ -242,7 +244,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /task or /tasks
-    if (text.includes("/task")) {
+    if (text_arr.includes("/task")) {
       const tasksText = await getRecentTasks();
       bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
       return;
