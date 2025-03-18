@@ -34,6 +34,8 @@ export async function verifyReplies(
       const response = await axios.get(url, options);
       const data = response.data;
 
+      //NOTE: The twitterapi.io's doc for this endpoint mentions that the response will have the key "replies", but instead the generated response has the key "tweets";
+      //NOTE: In future if the api endpoint or doc is updated, make the necessary changes as follows : data.tweets->data.replies (or as mentioned in docs);
       if (Array.isArray(data.tweets)) {
         verified = data.tweets.some(
           (tweets: any) =>
