@@ -21,7 +21,7 @@ cron.schedule(
     console.log("Running cron job");
     resetDailyTasks();
   },
-  { timezone: "Asia/Kolkata" },
+  { timezone: "Asia/Kolkata" }
 );
 cron.schedule(
   "0 18 * * *",
@@ -29,7 +29,7 @@ cron.schedule(
     console.log("Sending reminder notifications");
     await sendReminderNotifications();
   },
-  { timezone: "Asia/Kolkata" },
+  { timezone: "Asia/Kolkata" }
 );
 
 dotenv.config();
