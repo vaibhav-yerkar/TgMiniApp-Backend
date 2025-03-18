@@ -92,6 +92,8 @@ model Users{
   taskCompleted     Int[]       @default([])
   onceTaskCompleted Int[]       @default([])
   Invitees          BigInt[]    @default([])
+  twitterId        BigInt?
+  twitterUsername  String?
 }
 
 model Admin{

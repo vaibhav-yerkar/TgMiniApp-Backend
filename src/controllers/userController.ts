@@ -4,6 +4,7 @@ import {
   sendNotification,
   sendBulkNotifications,
 } from "../service/notificationService";
+import { getTwitterInfo, fetchFollowers } from "../service/twitterService";
 import { connect } from "http2";
 
 declare global {
@@ -60,6 +61,10 @@ const safeReplacer = (_key: string, value: any) => {
  *         telegramId:
  *           type: integer
  *         inviteLink:
+ *           type: string
+ *         twitterId:
+ *           type: integer
+ *         twitterUsername:
  *           type: string
  *         totalScore:
  *           type: integer
@@ -392,6 +397,60 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
     return;
+  }
+};
+
+/**
+ * @swagger
+ * /user/twitter-followers:
+ *   get:
+ *     summary: Get Twitter followers list
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of Twitter followers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 followers:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: number
+ *                       name:
+ *                         type: string
+ *       404:
+ *         description: User's Twitter information not available or unable to fetch followers list
+ *       500:
+ *         description: Internal server error
+ */
+
+export const getFollowerList: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId as string);
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+
+    if (!user || user.twitterUsername === null) {
+      res.status(404).json({ message: "User's twitter Info not available" });
+      return;
+    }
+
+    const followers = await fetchFollowers(user.twitterUsername);
+
+    if (followers.length === 0) {
+      res.status(404).json({ message: "Unable to fetch follower's list" });
+      return;
+    }
+
+    res.status(200).json({ followers: followers });
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error " });
   }
 };
 
@@ -1076,6 +1135,33 @@ export const updateUser: RequestHandler = async (req, res) => {
   }
 };
 
+/**
+ * @swagger
+ * /user/update-username:
+ *   put:
+ *     summary: Update User Name
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               username:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
 export const updateUserName: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId!);
@@ -1090,6 +1176,57 @@ export const updateUserName: RequestHandler = async (req, res) => {
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+/**
+ * @swagger
+ * /user/update-twitterInfo/{userName}:
+ *   put:
+ *     summary: update User profile - add user's twitter Info
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: twitter username of the user
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       404:
+ *         description: User not found
+ */
+export const updateTwitterInfo: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId as string);
+    const userName = req.params.userName as string;
+
+    const userInfo = await getTwitterInfo(userName);
+    if (userInfo.id === BigInt(0) || userInfo.name == "") {
+      res.status(404).json({ message: "Unable to fetch userInfo" });
+    }
+
+    const user = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        twitterId: userInfo.id as unknown as bigint,
+        twitterUsername: userInfo.name,
+      },
+    });
+
+    res.status(200).json(JSON.stringify(user, safeReplacer));
+    return;
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server error" });
     return;
   }
 };
