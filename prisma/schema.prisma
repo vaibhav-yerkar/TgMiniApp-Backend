@@ -1,23 +1,7 @@
-// This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-//////////////////////////////////////////////////////////////////////////////////////
-// taskComplete:
-// id
-// state [pending, completed, rejected]
-// activity_url?
-// image_url?
-
-// updateState-api (admin)
-// verify-user-tasks (admin)
-// notification/mark-read (auth)
-//////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
 generator client {
   provider = "prisma-client-js"
@@ -54,59 +38,60 @@ enum Platform {
 }
 
 model TaskComplete {
-  id               Int         @id @default(autoincrement())
-  status           TaskStatus  
-  activity_url     String?
-  image_url        String?
-  taskId           Int
-  user             Users       @relation("taskUnderScrutiny", fields: [userId], references: [id])
-  userId           Int
-  createdAt        DateTime    @default(now())
+  id           Int        @id @default(autoincrement())
+  status       TaskStatus
+  activity_url String?
+  image_url    String?
+  taskId       Int
+  user         Users      @relation("taskUnderScrutiny", fields: [userId], references: [id])
+  userId       Int
+  createdAt    DateTime   @default(now())
 }
 
-model Tasks{
-  id                Int         @id @default(autoincrement())
-  title             String
-  cta               String      @default("Complete")
-  description       String?
-  link              String
-  image             String?
-  submitType        SubmitType  @default(NONE)
-  type              TaskType
-  points            Int
-  platform          Platform    @default(TELEGRAM)
-  createadAt        DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+model Tasks {
+  id          Int        @id @default(autoincrement())
+  title       String
+  cta         String     @default("Complete")
+  description String?
+  link        String
+  image       String?
+  submitType  SubmitType @default(NONE)
+  type        TaskType
+  points      Int
+  platform    Platform   @default(TELEGRAM)
+  createadAt  DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
-model Users{
-  id                Int         @id @default(autoincrement())
-  inviteLink        String      @unique
-  telegramId        BigInt      @unique
-  username          String      @unique
-  totalScore        Int         @default(0)
-  taskScore         Int         @default(0)
-  inviteScore       Int         @default(0)
-  lastResetDate     DateTime    @default(now())
-  underScrutiny     TaskComplete[]  @relation("taskUnderScrutiny")
-  taskCompleted     Int[]       @default([])
-  onceTaskCompleted Int[]       @default([])
-  Invitees          BigInt[]    @default([])
-  twitterId        BigInt?
-  twitterUsername  String?
+model Users {
+  id                Int            @id @default(autoincrement())
+  inviteLink        String         @unique
+  telegramId        BigInt         @unique
+  username          String         @unique
+  totalScore        Int            @default(0)
+  taskScore         Int            @default(0)
+  inviteScore       Int            @default(0)
+  lastResetDate     DateTime       @default(now())
+  underScrutiny     TaskComplete[] @relation("taskUnderScrutiny")
+  taskCompleted     Int[]          @default([])
+  onceTaskCompleted Int[]          @default([])
+  Invitees          BigInt[]       @default([])
+  twitterInvitees   BigInt[]       @default([])
+  twitterId         BigInt?        @unique
+  twitterUsername   String?        @unique
+  referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))
 }
 
-model Admin{
-  id                Int         @id @default(autoincrement())
-  username          String      @unique
-  password          String
+model Admin {
+  id       Int    @id @default(autoincrement())
+  username String @unique
+  password String
 }
 
-model Anmt{
-  id                Int         @id @default(autoincrement())
-  title             String 
-  description       String?
-  image             String
-  anmtTasks         Int[]
+model Anmt {
+  id          Int     @id @default(autoincrement())
+  title       String
+  description String?
+  image       String
+  anmtTasks   Int[]
 }
-

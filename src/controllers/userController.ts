@@ -60,6 +60,8 @@ const safeReplacer = (_key: string, value: any) => {
  *           type: string
  *         telegramId:
  *           type: integer
+ *         referCode:
+ *           type: integer
  *         inviteLink:
  *           type: string
  *         twitterId:
@@ -88,6 +90,10 @@ const safeReplacer = (_key: string, value: any) => {
  *           items:
  *             type: integer
  *         Invitees:
+ *           type: array
+ *           items:
+ *             type: integer
+ *         twitterInvitees:
  *           type: array
  *           items:
  *             type: integer
@@ -901,7 +907,75 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
- * /users/reset-score:
+ * /user/update-invitee/{twitterId}:
+ *  post:
+ *   summary: Update Twitter Invitee
+ *   tags: [User - User]
+ *   security:
+ *     - bearerAuth: []
+ *   parameters:
+ *     - in: path
+ *       name: twitterId
+ *       required: true
+ *       schema:
+ *         type: string
+ *       description: The Twitter ID of the invitee to add (as a string to be safely converted to BigInt)
+ *   responses:
+ *     200:
+ *       description: User invited successfully
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               message:
+ *                 type: string
+ *               user:
+ *                 $ref: '#/components/schemas/User'
+ *     400:
+ *       description: User already invited
+ *     404:
+ *       description: User not found
+ *     500:
+ *       description: Internal server error
+ */
+export const updateTwitterInvitee: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId!);
+    const twitterId = BigInt(req.params.twitterId as string);
+
+    const user = await prisma.users.findUnique({ where: { id: userId } });
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    if (user.twitterInvitees.includes(twitterId)) {
+      res.status(400).json({ error: "User already invited" });
+      return;
+    }
+    const updatedUser = await prisma.users.update({
+      where: { id: userId },
+      data: {
+        twitterInvitees: { push: twitterId },
+      },
+    });
+    res.json(
+      JSON.parse(
+        JSON.stringify(
+          { message: "User invited successfully", user: updatedUser },
+          safeReplacer
+        )
+      )
+    );
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+/**
+ * @swagger
+ * /user/reset-score:
  *   post:
  *     summary: Reset task score for all users
  *     tags: [User - Admin]
@@ -950,7 +1024,7 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
- * /user/reward-inviter/{inviterId}:
+ * /user/reward-inviter/{referCode}:
  *   post:
  *     summary: Reward user for inviting another user
  *     tags: [User - User]
@@ -958,11 +1032,11 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
- *         name: inviterId
+ *         name: referCode
  *         required: true
  *         schema:
  *           type: integer
- *         description: Telegram ID of the inviter
+ *         description: Referral Code of Inviter
  *     responses:
  *       200:
  *         description: Inviter rewarded successfully
@@ -979,11 +1053,13 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
 export const rewardInviter: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId!);
-    const inviterId = parseInt(req.params.inviterId);
+    const referCode = parseInt(req.params.referCode);
+    // const inviterId = parseInt(req.params.inviterId);
 
     const [user, inviter] = await Promise.all([
       prisma.users.findUnique({ where: { id: userId } }),
-      prisma.users.findUnique({ where: { telegramId: BigInt(inviterId) } }),
+      // prisma.users.findUnique({ where: { telegramId: BigInt(inviterId) } }),
+      prisma.users.findUnique({ where: { referCode: referCode } }),
     ]);
 
     if (!user) {
