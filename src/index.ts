@@ -5,7 +5,11 @@ import dotenv from "dotenv";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 import { initlialiseTelegramBot } from "./service/telegramBotService";
-import { resetDailyTasks, sendReminderNotifications } from "./config/cron-work";
+import {
+  resetDailyTasks,
+  sendReminderNotifications,
+  initializeTwitterTaskScheduler,
+} from "./config/cron-work";
 
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
@@ -55,6 +59,8 @@ app.use("/anmt", announcemetRouter);
 initlialiseTelegramBot(app).catch((err) => {
   console.error("Error in initialising telegram bot:", err);
 });
+
+// initializeTwitterTaskScheduler();
 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);

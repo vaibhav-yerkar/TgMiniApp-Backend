@@ -1,6 +1,7 @@
-import { throws } from "assert";
+import { PrismaClient } from "@prisma/client";
 import axios from "axios";
-import express, { Request, Response } from "express";
+
+const prisma = new PrismaClient();
 
 const BASE_URL = "https://api.twitterapi.io";
 const API_KEY = process.env.TWITTER_API_KEY;
@@ -20,7 +21,7 @@ const options = {
  */
 export async function verifyReplies(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -45,7 +46,7 @@ export async function verifyReplies(
             tweets.author &&
             tweets.author.userName &&
             tweets.author.userName.toLowerCase() ===
-              twitterUserName.toLowerCase(),
+              twitterUserName.toLowerCase()
         );
       }
       hasNextPage = data.has_next_page;
@@ -68,7 +69,7 @@ export async function verifyReplies(
  */
 export async function verifyRetweeters(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -88,7 +89,7 @@ export async function verifyRetweeters(
         verified = data.retweeters.some(
           (users: any) =>
             users.userName &&
-            users.userName.toLowerCase() === twitterUserName.toLowerCase(),
+            users.userName.toLowerCase() === twitterUserName.toLowerCase()
         );
       }
       hasNextPage = data.has_next_page;
@@ -111,7 +112,7 @@ export async function verifyRetweeters(
  */
 export async function verifyQuotes(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -154,7 +155,7 @@ export async function verifyQuotes(
  * @returns List[Object{follower's-name, follower's-twitter-Id}] for a given twitterUserName.
  */
 export async function fetchFollowers(
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<{ id: bigint; name: string }[]> {
   let cursor = "";
   let followers: { id: bigint; name: string }[] = [];
@@ -194,7 +195,7 @@ export async function fetchFollowers(
  * @returns Object{twitterId, userName} for a given twitterUserName.
  */
 export async function getTwitterInfo(
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<{ id: BigInt; name: string }> {
   try {
     let url = `${BASE_URL}/twitter/user/info?userName=${twitterUserName}`;
@@ -213,5 +214,101 @@ export async function getTwitterInfo(
   } catch (error) {
     console.error("Error Occured :", error);
     return { id: BigInt(0), name: "" };
+  }
+}
+
+/**
+ * Fetches the latest tweet from the given username.
+ * Assumes the API returns an object with a "tweets" array.
+ */
+async function fetchLatestTweet(username: string): Promise<any | null> {
+  const url = `${BASE_URL}/twitter/user/last_tweets?userName=${username}`;
+  try {
+    const response = await axios.get(url, options);
+    if (
+      Array.isArray(response.data.tweets) &&
+      response.data.tweets.length > 0
+    ) {
+      const tweet = response.data.tweets[0];
+      if (
+        new Date(tweet.createdAt) < new Date(Date.now() - 24 * 60 * 60 * 1000)
+      ) {
+        return null;
+      }
+      return tweet;
+    }
+    return null;
+  } catch (err) {
+    console.error("Error in fetchLatestTweet:", err);
+    return null;
+  }
+}
+
+/**
+ * Creates a Twitter task for the latest tweet.
+ * The task format is:
+ *   title: twitter_fetchTime (formatted as - Twitter hh:mm)
+ *   cta: complete
+ *   description: like, comment, retweet, qrt,
+ *   link: twitter_post link
+ *   image: null
+ *   submitType: NONE
+ *   type: DAILY
+ *   points: 300
+ *   platform: TWITTER
+ */
+export async function createTwitterTask(): Promise<void> {
+  const username = process.env.TWITTER_USERNAME;
+  try {
+    const tweet = await fetchLatestTweet(username as string);
+    if (!tweet) {
+      return;
+    }
+    const existingTask = await prisma.tasks.findFirst({
+      where: {
+        link: tweet.twitterUrl,
+        platform: "TWITTER",
+      },
+    });
+    if (existingTask) {
+      console.log("Task already exists for this tweet link:", tweet.twitterUrl);
+      return;
+    }
+    const task = prisma.tasks.create({
+      data: {
+        title: `Twitter ${new Date().getHours()}:${new Date().getMinutes()}`,
+        cta: "complete",
+        description: "like, comment, retweet, qrt",
+        link: tweet.twitterUrl,
+        submitType: "NONE",
+        type: "DAILY",
+        points: 300,
+        platform: "TWITTER",
+      },
+    });
+    console.log("Twitter task created");
+  } catch (error) {
+    console.error("Error in createTwitterTask:", error);
+  }
+}
+
+/**
+ * Removes Twitter tasks (from the Tasks table) that were created more than 24 hours ago.
+ */
+export async function removeExpiredTwitterTasks(): Promise<void> {
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  try {
+    const result = await prisma.tasks.deleteMany({
+      where: {
+        platform: "TWITTER",
+        type: "DAILY",
+        createdAt: {
+          lt: oneDayAgo,
+        },
+      },
+    });
+    console.log("Expired Twitter tasks removed");
+  } catch (error) {
+    console.error("Error in removeExpiredTwitterTasks:", error);
   }
 }

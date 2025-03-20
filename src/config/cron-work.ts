@@ -1,6 +1,10 @@
 import cron from "node-cron";
 import { PrismaClient } from "@prisma/client";
 import { sendBulkNotifications } from "../service/notificationService";
+import {
+  createTwitterTask,
+  removeExpiredTwitterTasks,
+} from "../service/twitterService";
 
 const prisma = new PrismaClient();
 
@@ -34,6 +38,25 @@ export const sendReminderNotifications = async () => {
     console.log("Error sending reminder notifications: ", error);
   }
 };
+
+/**
+ * Initializes cron jobs:
+ * - Every hour, fetch the latest tweet from "joinzo" and create a Twitter task.
+ * - Every hour, remove Twitter tasks older than 24 hours.
+ */
+export function initializeTwitterTaskScheduler(): void {
+  cron.schedule("0 * * * *", async () => {
+    console.log("[Cron] Creating Twitter task");
+    await createTwitterTask();
+  });
+
+  cron.schedule("0 * * * *", async () => {
+    console.log("[Cron] Removing expired Twitter tasks");
+    await removeExpiredTwitterTasks();
+  });
+
+  console.log("Twitter Task Scheduler initialized.");
+}
 
 cron.schedule(
   "0 0 * * *",

@@ -59,7 +59,7 @@ model Tasks {
   type        TaskType
   points      Int
   platform    Platform   @default(TELEGRAM)
-  createadAt  DateTime   @default(now())
+  createdAt  DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 

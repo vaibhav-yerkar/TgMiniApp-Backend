@@ -105,11 +105,11 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             (user, index) =>
               `${index + 1}. ${escapeMarkdown(user.username)} - ${
                 user.totalScore
-              } points`,
+              } points`
           )
           .join("\n") +
         `\n\n🎯 *Your Position*: #${userRank} ${escapeMarkdown(
-          currentUser.username,
+          currentUser.username
         )} with ${currentUser.totalScore} points`
       );
     } catch (err) {
@@ -123,8 +123,8 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
 
       const tasks = await prisma.tasks.findMany({
-        where: { createadAt: { gte: fourDaysAgo } },
-        orderBy: { createadAt: "desc" },
+        where: { createdAt: { gte: fourDaysAgo } },
+        orderBy: { createdAt: "desc" },
       });
 
       if (tasks.length === 0) {
@@ -142,7 +142,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                 task.description
                   ? escapeMarkdown(task.description)
                   : "No description"
-              }\n   Type: ${escapeMarkdown(task.type)}\n`,
+              }\n   Type: ${escapeMarkdown(task.type)}\n`
           )
           .join("\n")
       );
@@ -182,7 +182,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             bot.sendMessage(
               chatId,
               `Welcome ${escapeMarkdown(
-                firstName,
+                firstName
               )}! Let's get you started with our Mini App.`,
               {
                 reply_markup: {
@@ -195,13 +195,13 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                     ],
                   ],
                 },
-              },
+              }
             );
           } else {
             bot.sendMessage(
               chatId,
               `Welcome ${escapeMarkdown(
-                firstName,
+                firstName
               )}! To use the Mini App, please start a private chat with me.`,
               {
                 parse_mode: "Markdown",
@@ -215,15 +215,15 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                     ],
                   ],
                 },
-              },
+              }
             );
           }
         } else {
           bot.sendMessage(
             chatId,
             `Welcome ${escapeMarkdown(
-              firstName,
-            )}! Unfortunately, the Mini App URL is not configured.`,
+              firstName
+            )}! Unfortunately, the Mini App URL is not configured.`
           );
         }
         return;
@@ -252,7 +252,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     const commandsList =
       `Hello ${escapeMarkdown(
-        firstName,
+        firstName
       )}! Here are the available commands:\n\n` +
       `/start - Open the Mini App\n` +
       `/leaderboard - View the current leaderboard\n` +
