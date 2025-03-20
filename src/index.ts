@@ -60,7 +60,7 @@ initlialiseTelegramBot(app).catch((err) => {
   console.error("Error in initialising telegram bot:", err);
 });
 
-// initializeTwitterTaskScheduler();
+initializeTwitterTaskScheduler();
 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);

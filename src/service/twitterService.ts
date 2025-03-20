@@ -28,6 +28,9 @@ export async function verifyReplies(
   let hasNextPage = true;
 
   try {
+    if (tweetId === "" || twitterUserName === "") {
+      throw new Error("Invalid tweetId or twitterUserName");
+    }
     while (!verified && hasNextPage) {
       let url = `${BASE_URL}/twitter/tweet/replies?tweetId=${tweetId}`;
       if (cursor) {
@@ -76,6 +79,9 @@ export async function verifyRetweeters(
   let hasNextPage = true;
 
   try {
+    if (tweetId === "" || twitterUserName === "") {
+      throw new Error("Invalid tweetId or twitterUserName");
+    }
     while (!verified && hasNextPage) {
       let url = `${BASE_URL}/twitter/tweet/retweeters?tweetId=${tweetId}`;
       if (cursor) {
@@ -119,6 +125,9 @@ export async function verifyQuotes(
   let hasNextPage = true;
 
   try {
+    if (tweetId === "" || twitterUserName === "") {
+      throw new Error("Invalid tweetId or twitterUserName");
+    }
     while (!verified && hasNextPage) {
       let url = `${BASE_URL}/twitter/tweet/quotes?tweetId=${tweetId}`;
       if (cursor) {

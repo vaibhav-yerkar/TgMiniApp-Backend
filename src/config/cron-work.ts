@@ -45,12 +45,12 @@ export const sendReminderNotifications = async () => {
  * - Every hour, remove Twitter tasks older than 24 hours.
  */
 export function initializeTwitterTaskScheduler(): void {
-  cron.schedule("0 * * * *", async () => {
+  cron.schedule("0 */2 * * *", async () => {
     console.log("[Cron] Creating Twitter task");
     await createTwitterTask();
   });
 
-  cron.schedule("0 * * * *", async () => {
+  cron.schedule("0 */2 * * *", async () => {
     console.log("[Cron] Removing expired Twitter tasks");
     await removeExpiredTwitterTasks();
   });

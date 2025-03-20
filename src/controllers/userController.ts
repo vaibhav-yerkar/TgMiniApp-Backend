@@ -5,7 +5,11 @@ import {
   sendBulkNotifications,
 } from "../service/notificationService";
 import { getTwitterInfo, fetchFollowers } from "../service/twitterService";
-import { connect } from "http2";
+import {
+  verifyReplies,
+  verifyQuotes,
+  verifyRetweeters,
+} from "../service/twitterService";
 
 declare global {
   namespace Express {
@@ -543,11 +547,29 @@ export const markTask: RequestHandler = async (req, res) => {
     if (task.platform === "TWITTER" || task.platform === "TELEGRAM") {
       let verifyed = false;
       if (task.platform === "TWITTER") {
-        verifyed = true;
+        const parts = task.link.split("/");
+        const tweetId = parts.pop() || "";
+
+        const verifyedReplies = await verifyReplies(
+          tweetId,
+          user.twitterUsername as string
+        );
+        const verifyedRetweeters = await verifyRetweeters(
+          tweetId,
+          user.twitterUsername as string
+        );
+        const verifyedQuotes = await verifyQuotes(
+          tweetId,
+          user.twitterUsername as string
+        );
+
+        verifyed = verifyedReplies && verifyedRetweeters && verifyedQuotes;
       } else if (task.platform === "TELEGRAM") {
         verifyed = false;
+
         let bot_token;
         let chat_id;
+
         if (task.description?.toLowerCase().includes("community")) {
           bot_token = process.env.TELEGRAM_BOT_TOKEN;
           chat_id = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
@@ -555,6 +577,7 @@ export const markTask: RequestHandler = async (req, res) => {
           bot_token = process.env.TELEGRAM_BOT_TOKEN;
           chat_id = process.env.TELEGRAM_ANNOUNCEMENT_CHAT_ID;
         }
+
         const apiResponse = await fetch(
           `https://api.telegram.org/bot${bot_token}/getChatMember?chat_id=${chat_id}&user_id=${user.telegramId}`
         );
