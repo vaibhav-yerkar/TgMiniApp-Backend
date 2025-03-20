@@ -234,11 +234,9 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
   const url = `${BASE_URL}/twitter/user/last_tweets?userName=${username}`;
   try {
     const response = await axios.get(url, options);
-    if (
-      Array.isArray(response.data.tweets) &&
-      response.data.tweets.length > 0
-    ) {
-      const tweet = response.data.tweets[0];
+    const data = response.data;
+    if (Array.isArray(data.data.tweets) && data.data.tweets.length > 0) {
+      const tweet = data.data.tweets[0];
       if (
         new Date(tweet.createdAt) < new Date(Date.now() - 24 * 60 * 60 * 1000)
       ) {
@@ -268,6 +266,7 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
  */
 export async function createTwitterTask(): Promise<void> {
   const username = process.env.TWITTER_USERNAME;
+  console.log("Creating Twitter task for", username);
   try {
     const tweet = await fetchLatestTweet(username as string);
     if (!tweet) {
@@ -283,19 +282,20 @@ export async function createTwitterTask(): Promise<void> {
       console.log("Task already exists for this tweet link:", tweet.twitterUrl);
       return;
     }
-    const task = prisma.tasks.create({
+    const task = await prisma.tasks.create({
       data: {
         title: `Twitter ${new Date().getHours()}:${new Date().getMinutes()}`,
         cta: "complete",
         description: "like, comment, retweet, qrt",
         link: tweet.twitterUrl,
+        image: null,
         submitType: "NONE",
         type: "DAILY",
         points: 300,
         platform: "TWITTER",
       },
     });
-    console.log("Twitter task created");
+    console.log("Twitter task created", task);
   } catch (error) {
     console.error("Error in createTwitterTask:", error);
   }
