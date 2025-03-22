@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
+import { spawn } from "child_process";
 
 const prisma = new PrismaClient();
 
@@ -236,7 +237,13 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
     const response = await axios.get(url, options);
     const data = response.data;
     if (Array.isArray(data.data.tweets) && data.data.tweets.length > 0) {
-      const tweet = data.data.tweets[0];
+      const validTweets = data.data.tweets.filter(
+        (tweet: any) => tweet.retweeted_tweet === null
+      );
+      if (validTweets.length === 0) {
+        return null;
+      }
+      const tweet = validTweets[0];
       if (
         new Date(tweet.createdAt) < new Date(Date.now() - 24 * 60 * 60 * 1000)
       ) {
@@ -249,6 +256,26 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
     console.error("Error in fetchLatestTweet:", err);
     return null;
   }
+}
+
+/**
+ * Function to run python script that
+ * the script takes input the latest tweet and generate a telegram notification for the same.
+ */
+async function runPythonScript(jsonStr: string) {
+  const pythonProcess = spawn("python3", ["notification.py", jsonStr]);
+
+  pythonProcess.stdout.on("data", (data) => {
+    console.log(`🐍 Python Output: ${data.toString()}`);
+  });
+
+  pythonProcess.stderr.on("data", (data) => {
+    console.error(`❌ Python Error: ${data.toString()}`);
+  });
+
+  pythonProcess.on("close", (code) => {
+    console.log(`🔄 Python script exited with code ${code}`);
+  });
 }
 
 /**
@@ -272,6 +299,13 @@ export async function createTwitterTask(): Promise<void> {
     if (!tweet) {
       return;
     }
+
+    const payload = JSON.stringify({
+      tweet: tweet.text,
+      tweet_link: tweet.twitterUrl,
+    });
+    runPythonScript(payload);
+
     const existingTask = await prisma.tasks.findFirst({
       where: {
         link: tweet.twitterUrl,
