@@ -45,12 +45,12 @@ export const sendReminderNotifications = async () => {
  * - Every hour, remove Twitter tasks older than 24 hours.
  */
 export function initializeTwitterTaskScheduler(): void {
-  cron.schedule("0 */2 * * *", async () => {
+  cron.schedule("*/20 * * * *", async () => {
     console.log("[Cron] Creating Twitter task");
     await createTwitterTask();
   });
 
-  cron.schedule("0 */2 * * *", async () => {
+  cron.schedule("*/20 * * * *", async () => {
     console.log("[Cron] Removing expired Twitter tasks");
     await removeExpiredTwitterTasks();
   });
@@ -64,7 +64,7 @@ cron.schedule(
     console.log("Resetting daily tasks");
     await resetDailyTasks();
   },
-  { timezone: "Asia/Kolkata" }
+  { timezone: "Asia/Kolkata" },
 );
 
 cron.schedule(
@@ -73,5 +73,5 @@ cron.schedule(
     console.log("Sending reminder notifications");
     await sendReminderNotifications();
   },
-  { timezone: "Asia/Kolkata" }
+  { timezone: "Asia/Kolkata" },
 );
