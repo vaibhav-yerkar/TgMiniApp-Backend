@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import { spawn } from "child_process";
+import path from "path";
 
 const prisma = new PrismaClient();
 
@@ -263,7 +264,9 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
  * the script takes input the latest tweet and generate a telegram notification for the same.
  */
 async function runPythonScript(jsonStr: string) {
-  const pythonProcess = spawn("python3", ["service/notification.py", jsonStr]);
+  // Build an absolute path using __dirname
+  const scriptPath = path.join(__dirname, "notification.py");
+  const pythonProcess = spawn("python3", [scriptPath, jsonStr]);
 
   pythonProcess.stdout.on("data", (data) => {
     console.log(`🐍 Python Output: ${data.toString()}`);
