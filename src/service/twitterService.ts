@@ -263,7 +263,7 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
  * the script takes input the latest tweet and generate a telegram notification for the same.
  */
 async function runPythonScript(jsonStr: string) {
-  const pythonProcess = spawn("python3", ["notification.py", jsonStr]);
+  const pythonProcess = spawn("venv/bin/python3", ["notification.py", jsonStr]);
 
   pythonProcess.stdout.on("data", (data) => {
     console.log(`🐍 Python Output: ${data.toString()}`);
