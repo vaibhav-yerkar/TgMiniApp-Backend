@@ -1324,7 +1324,7 @@ export const updateTwitterInfo: RequestHandler = async (req, res) => {
       },
     });
 
-    res.status(200).json(JSON.stringify(user, safeReplacer));
+    res.status(200).json(JSON.parse(JSON.stringify(user, safeReplacer)));
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server error" });
