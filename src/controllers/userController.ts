@@ -458,9 +458,11 @@ export const getFollowerList: RequestHandler = async (req, res) => {
       return;
     }
 
-    res.status(200).json({ followers: followers });
+    res
+      .status(200)
+      .json(JSON.parse(JSON.stringify({ followers: followers }, safeReplacer)));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error " });
+    res.status(500).json({ error: "Internal server error " + error });
   }
 };
 
