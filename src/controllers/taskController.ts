@@ -38,6 +38,11 @@ const prisma = new PrismaClient();
  *         type:
  *           type: string
  *           enum: [DAILY, ONCE]
+ *         checkFor:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [ FOLLOW, REPLY, RETWEET, REACT, QUOTE]
  *         points:
  *           type: integer
  *         isUploadRequired:

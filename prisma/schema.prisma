@@ -38,7 +38,7 @@ enum Platform {
 }
 
 enum CheckFor {
-  NONE
+  REACT
   FOLLOW
   RETWEET
   REPLY
@@ -51,7 +51,6 @@ model TaskComplete {
   activity_url String?
   image_url    String?
   taskId       Int
-  checkFor     CheckFor[] @default([NONE])
   user         Users      @relation("taskUnderScrutiny", fields: [userId], references: [id])
   userId       Int
   createdAt    DateTime   @default(now())
@@ -66,6 +65,7 @@ model Tasks {
   image       String?
   submitType  SubmitType @default(NONE)
   type        TaskType
+  checkFor    CheckFor[] @default([])
   points      Int
   platform    Platform   @default(TELEGRAM)
   createdAt  DateTime   @default(now())

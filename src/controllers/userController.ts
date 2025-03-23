@@ -481,11 +481,6 @@ export const getFollowingList: RequestHandler = async (req, res) => {
  *               image_url:
  *                 type: string
  *                 description: URL of the uploaded image
- *               checkFor:
- *                 type: array
- *                 items:
- *                   type: string
- *                   enum: [NONE, FOLLOW, REPLY, RETWEET, QUOTE]
  *     responses:
  *       200:
  *         description: Task marked successfully
@@ -507,7 +502,7 @@ export const markTask: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
 
-    const { taskId, activity_url, image_url, checkFor } = req.body;
+    const { taskId, activity_url, image_url } = req.body;
     const status = "PENDING";
 
     if (!taskId) {
@@ -547,32 +542,28 @@ export const markTask: RequestHandler = async (req, res) => {
         const tweetId = parts.pop() || "";
         verifyed = true;
 
-        for (const entry of checkFor as string[]) {
-          if (entry === "NONE") {
+        for (const entry of task.checkFor as string[]) {
+          if (entry === "REACT") {
             verifyed = verifyed && true;
-          }
-          if (entry === "FOLLOW") {
+          } else if (entry === "FOLLOW") {
             const followResult = await fetchFollowings(
               user.twitterUsername as string,
               true
             );
             verifyed = verifyed && Boolean(followResult);
-          }
-          if (entry === "RETWEET") {
+          } else if (entry === "RETWEET") {
             const verifyedRetweeters = await verifyRetweeters(
               tweetId,
               user.twitterUsername as string
             );
             verifyed = verifyed && verifyedRetweeters;
-          }
-          if (entry === "REPLY") {
+          } else if (entry === "REPLY") {
             const verifyedReplies = await verifyReplies(
               tweetId,
               user.twitterUsername as string
             );
             verifyed = verifyed && verifyedReplies;
-          }
-          if (entry === "QUOTE") {
+          } else if (entry === "QUOTE") {
             const verifyedQuotes = await verifyQuotes(
               tweetId,
               user.twitterUsername as string

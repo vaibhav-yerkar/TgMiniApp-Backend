@@ -447,6 +447,7 @@ export async function createTwitterTask(): Promise<void> {
         image: null,
         submitType: "NONE",
         type: "DAILY",
+        checkFor: ["REACT", "REPLY", "RETWEET", "QUOTE"],
         points: 300,
         platform: "TWITTER",
       },
