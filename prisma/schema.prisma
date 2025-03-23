@@ -77,7 +77,7 @@ model Users {
   onceTaskCompleted Int[]          @default([])
   Invitees          BigInt[]       @default([])
   twitterInvitees   BigInt[]       @default([])
-  twitterId         BigInt?        @unique
+  twitterId         String?        @unique
   twitterUsername   String?        @unique
   referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))
 }

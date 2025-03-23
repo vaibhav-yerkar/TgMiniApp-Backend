@@ -69,7 +69,7 @@ const safeReplacer = (_key: string, value: any) => {
  *         inviteLink:
  *           type: string
  *         twitterId:
- *           type: integer
+ *           type: string
  *         twitterUsername:
  *           type: string
  *         totalScore:
@@ -1312,14 +1312,14 @@ export const updateTwitterInfo: RequestHandler = async (req, res) => {
     const userName = req.params.userName as string;
 
     const userInfo = await getTwitterInfo(userName);
-    if (userInfo.id === BigInt(0) || userInfo.name == "") {
+    if (userInfo.id === "0" || userInfo.name == "") {
       res.status(404).json({ message: "Unable to fetch userInfo" });
     }
 
     const user = await prisma.users.update({
       where: { id: userId },
       data: {
-        twitterId: userInfo.id as unknown as bigint,
+        twitterId: userInfo.id as string,
         twitterUsername: userInfo.name,
       },
     });

@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import { spawn } from "child_process";
 import path from "path";
+import JSONbig from "json-bigint";
 
 const prisma = new PrismaClient();
 
@@ -94,7 +95,7 @@ export async function verifyRetweeters(
       const data = response.data;
 
       if (Array.isArray(data.users)) {
-        verified = data.retweeters.some(
+        verified = data.users.some(
           (users: any) =>
             users.userName &&
             users.userName.toLowerCase() === twitterUserName.toLowerCase()
@@ -167,9 +168,9 @@ export async function verifyQuotes(
  */
 export async function fetchFollowers(
   twitterUserName: string
-): Promise<{ id: bigint; name: string }[]> {
+): Promise<{ id: string; name: string }[]> {
   let cursor = "";
-  let followers: { id: bigint; name: string }[] = [];
+  let followers: { id: string; name: string }[] = [];
   let hasNextPage = true;
 
   try {
@@ -179,12 +180,17 @@ export async function fetchFollowers(
         url = `${url}&cursor=${cursor}`;
       }
 
-      const response = await axios.get(url, options);
+      const response = await axios.get(url, {
+        ...options,
+        transformResponse: (data) => {
+          return JSONbig({ storeAsString: true }).parse(data);
+        },
+      });
       const data = response.data;
 
       if (Array.isArray(data.followers)) {
         const newFollower = data.followers.map((follower: any) => {
-          return { id: BigInt(follower.id), name: follower.name };
+          return { id: follower.id, name: follower.name };
         });
         followers = followers.concat(newFollower);
       }
@@ -207,15 +213,20 @@ export async function fetchFollowers(
  */
 export async function getTwitterInfo(
   twitterUserName: string
-): Promise<{ id: BigInt; name: string }> {
+): Promise<{ id: string; name: string }> {
   try {
     let url = `${BASE_URL}/twitter/user/info?userName=${twitterUserName}`;
 
-    const response = await axios.get(url, options);
+    const response = await axios.get(url, {
+      ...options,
+      transformResponse: (data) => {
+        return JSONbig({ storeAsString: true }).parse(data);
+      },
+    });
     const data = response.data;
 
     if (data.data === null) {
-      Error("User not found");
+      throw Error("User not found");
     }
     const userInfo = {
       id: data.data.id,
@@ -224,7 +235,7 @@ export async function getTwitterInfo(
     return userInfo;
   } catch (error) {
     console.error("Error Occured :", error);
-    return { id: BigInt(0), name: "" };
+    return { id: "0", name: "" };
   }
 }
 
