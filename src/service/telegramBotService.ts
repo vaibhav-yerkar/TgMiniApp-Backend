@@ -79,7 +79,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   const formatLeaderBoard = async (telegramId: number): Promise<string> => {
     try {
       const currentUser = await prisma.users.findUnique({
-        where: { telegramId: BigInt(telegramId) },
+        where: { telegramId: telegramId.toString() },
         select: { username: true, totalScore: true },
       });
       if (!currentUser) {

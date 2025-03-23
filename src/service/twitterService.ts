@@ -40,7 +40,12 @@ export async function verifyReplies(
         url = `${url}&cursor=${cursor}`;
       }
 
-      const response = await axios.get(url, options);
+      const response = await axios.get(url, {
+        ...options,
+        transformResponse: (data) => {
+          return JSONbig({ storeAsString: true }).parse(data);
+        },
+      });
       const data = response.data;
 
       //*NOTE: The twitterapi.io's doc for this endpoint mentions that the response will have the key "replies", but instead the generated response has the key "tweets";
@@ -91,7 +96,12 @@ export async function verifyRetweeters(
         url = `${url}&cursor=${cursor}`;
       }
 
-      const response = await axios.get(url, options);
+      const response = await axios.get(url, {
+        ...options,
+        transformResponse: (data) => {
+          return JSONbig({ storeAsString: true }).parse(data);
+        },
+      });
       const data = response.data;
 
       if (Array.isArray(data.users)) {
@@ -137,7 +147,12 @@ export async function verifyQuotes(
         url = `${url}&cursor=${cursor}`;
       }
 
-      const response = await axios.get(url, options);
+      const response = await axios.get(url, {
+        ...options,
+        transformResponse: (data) => {
+          return JSONbig({ storeAsString: true }).parse(data);
+        },
+      });
       const data = response.data;
 
       if (Array.isArray(data.tweets)) {
@@ -166,33 +181,41 @@ export async function verifyQuotes(
  * @param twitterUserName - The username to look for among retweeters.
  * @returns List[Object{follower's-name, follower's-twitter-Id}] for a given twitterUserName.
  */
-export async function fetchFollowers(
+export async function fetchFollowings(
   twitterUserName: string
-): Promise<{ id: string; name: string }[]> {
+): Promise<{ id: string; displayName: string; username: string }[]> {
   let cursor = "";
-  let followers: { id: string; name: string }[] = [];
+  let following: { id: string; displayName: string; username: string }[] = [];
   let hasNextPage = true;
 
   try {
     while (hasNextPage) {
-      let url = `${BASE_URL}/twitter/user/followers?userName=${twitterUserName}`;
+      let url = `${BASE_URL}/twitter/user/followings?userName=${twitterUserName}`;
       if (cursor) {
         url = `${url}&cursor=${cursor}`;
       }
 
       const response = await axios.get(url, {
         ...options,
-        transformResponse: (data) => {
-          return JSONbig({ storeAsString: true }).parse(data);
-        },
+        transformResponse: [
+          (data: string) => {
+            return JSONbig({ storeAsString: true }).parse(data);
+          },
+        ],
       });
+
       const data = response.data;
 
-      if (Array.isArray(data.followers)) {
-        const newFollower = data.followers.map((follower: any) => {
-          return { id: follower.id, name: follower.name };
+      if (Array.isArray(data.followings)) {
+        const newFollower = data.followings.map((following: any) => {
+          console.log(following.id.toString());
+          return {
+            id: following.id,
+            displayName: following.name,
+            username: following.screen_name,
+          };
         });
-        followers = followers.concat(newFollower);
+        following = following.concat(newFollower);
       }
 
       hasNextPage = data.has_next_page;
@@ -202,7 +225,7 @@ export async function fetchFollowers(
     console.error("Error in fetchFollowers:", error);
     return [];
   }
-  return followers;
+  return following;
 }
 
 /**

@@ -6,7 +6,7 @@ import {
   getLeaderboard,
   getOverallLeaderboard,
   getUnderScrutinyTasks,
-  getFollowerList,
+  getFollowingList,
   completeTask,
   updateUser,
   resetTaskScore,
@@ -29,7 +29,7 @@ router.get("/profile", auth, getUserProfile);
 router.get("/username/:telegramId", auth, getUsername);
 router.get("/leaderboard", auth, getLeaderboard);
 router.get("/overall-leaderboard", auth, getOverallLeaderboard);
-router.get("/twitter-followers", auth, getFollowerList);
+router.get("/twitter-followings", auth, getFollowingList);
 router.get("/all", adminAuth, getAllUsers);
 router.get("/under-review", adminAuth, getUnderScrutinyTasks);
 

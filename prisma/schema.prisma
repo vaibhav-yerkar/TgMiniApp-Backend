@@ -66,7 +66,7 @@ model Tasks {
 model Users {
   id                Int            @id @default(autoincrement())
   inviteLink        String         @unique
-  telegramId        BigInt         @unique
+  telegramId        String         @unique
   username          String         @unique
   totalScore        Int            @default(0)
   taskScore         Int            @default(0)
@@ -75,8 +75,8 @@ model Users {
   underScrutiny     TaskComplete[] @relation("taskUnderScrutiny")
   taskCompleted     Int[]          @default([])
   onceTaskCompleted Int[]          @default([])
-  Invitees          BigInt[]       @default([])
-  twitterInvitees   BigInt[]       @default([])
+  Invitees          String[]       @default([])
+  twitterInvitees   String[]       @default([])
   twitterId         String?        @unique
   twitterUsername   String?        @unique
   referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))

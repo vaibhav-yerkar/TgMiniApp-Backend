@@ -4,7 +4,7 @@ import {
   sendNotification,
   sendBulkNotifications,
 } from "../service/notificationService";
-import { getTwitterInfo, fetchFollowers } from "../service/twitterService";
+import { getTwitterInfo, fetchFollowings } from "../service/twitterService";
 import {
   verifyReplies,
   verifyQuotes,
@@ -20,10 +20,6 @@ declare global {
 }
 
 const prisma = new PrismaClient();
-
-const safeReplacer = (_key: string, value: any) => {
-  return typeof value === "bigint" ? value.toString() : value;
-};
 
 /**
  * @swagger
@@ -63,7 +59,7 @@ const safeReplacer = (_key: string, value: any) => {
  *         username:
  *           type: string
  *         telegramId:
- *           type: integer
+ *           type: string
  *         referCode:
  *           type: integer
  *         inviteLink:
@@ -128,7 +124,7 @@ export const getAllUsers: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.json(JSON.parse(JSON.stringify(users, safeReplacer)));
+    res.json(users);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -167,7 +163,7 @@ export const getUserProfile: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
+    res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
@@ -212,7 +208,7 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
       res.status(404).json({ error: "User not found" });
       return;
     }
-    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
+    res.json(user);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
@@ -232,7 +228,7 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
  *         name: telegramId
  *         required: true
  *         schema:
- *           type: integer
+ *           type: string
  *         description: telegram ID of the user to get username
  *     responses:
  *       200:
@@ -244,7 +240,7 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
  */
 export const getUsername: RequestHandler = async (req, res) => {
   try {
-    const telegramId = parseInt(req.params.telegramId! as string);
+    const telegramId = req.params.telegramId! as string;
 
     const existingUser = await prisma.users.findUnique({
       where: { telegramId: telegramId },
@@ -295,11 +291,7 @@ export const getOverallLeaderboard: RequestHandler = async (req, res) => {
 
     const userPosition = leaderboard.find((user) => user.id === userId);
 
-    res.json(
-      JSON.parse(
-        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
-      )
-    );
+    res.json({ currentUser: userPosition, leaderboard });
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -340,11 +332,7 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
 
     const userPosition = leaderboard.find((user) => user.id === userId);
 
-    res.json(
-      JSON.parse(
-        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
-      )
-    );
+    res.json({ currentUser: userPosition, leaderboard });
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -400,9 +388,7 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
-    res
-      .status(200)
-      .json(JSON.parse(JSON.stringify({ tasks: tasks }, safeReplacer)));
+    res.status(200).json({ tasks: tasks });
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
@@ -412,9 +398,9 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
- * /user/twitter-followers:
+ * /user/twitter-followings:
  *   get:
- *     summary: Get Twitter followers list
+ *     summary: Get Twitter following list
  *     tags: [User - User]
  *     security:
  *       - bearerAuth: []
@@ -441,7 +427,7 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
  *         description: Internal server error
  */
 
-export const getFollowerList: RequestHandler = async (req, res) => {
+export const getFollowingList: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId as string);
     const user = await prisma.users.findUnique({ where: { id: userId } });
@@ -451,16 +437,14 @@ export const getFollowerList: RequestHandler = async (req, res) => {
       return;
     }
 
-    const followers = await fetchFollowers(user.twitterUsername);
+    const following = await fetchFollowings(user.twitterUsername);
 
-    if (followers.length === 0) {
+    if (following.length === 0) {
       res.status(404).json({ message: "Unable to fetch follower's list" });
       return;
     }
 
-    res
-      .status(200)
-      .json(JSON.parse(JSON.stringify({ followers: followers }, safeReplacer)));
+    res.status(200).json({ followers: following });
   } catch (error) {
     res.status(500).json({ error: "Internal server error " + error });
   }
@@ -581,7 +565,9 @@ export const markTask: RequestHandler = async (req, res) => {
         }
 
         const apiResponse = await fetch(
-          `https://api.telegram.org/bot${bot_token}/getChatMember?chat_id=${chat_id}&user_id=${user.telegramId}`
+          `https://api.telegram.org/bot${bot_token}/getChatMember?chat_id=${chat_id}&user_id=${BigInt(
+            user.telegramId
+          )}`
         );
 
         const data = await apiResponse.json();
@@ -612,17 +598,10 @@ export const markTask: RequestHandler = async (req, res) => {
           underScrutiny: true,
         },
       });
-      res.status(200).json(
-        JSON.parse(
-          JSON.stringify(
-            {
-              message: "Task completed successfully",
-              user: updateUser,
-            },
-            safeReplacer
-          )
-        )
-      );
+      res.status(200).json({
+        message: "Task completed successfully",
+        user: updateUser,
+      });
       const title = "Task Completed Successfully";
       const message =
         "Reward collected! Great job completing the task. Keep up the awesome work!";
@@ -661,17 +640,11 @@ export const markTask: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.status(200).json(
-      JSON.parse(
-        JSON.stringify(
-          {
-            message: "Task marked successfully",
-            user: updatedUser,
-          },
-          safeReplacer
-        )
-      )
-    );
+    res.status(200).json({
+      message: "Task marked successfully",
+      user: updatedUser,
+    });
+
     const title = "Task Marked for Review";
     const message = `Task "${task.title}" has been marked for review. We will notify you once it has been reviewed.`;
     await sendNotification(userId, title, message);
@@ -775,17 +748,10 @@ export const completeTask: RequestHandler = async (req, res) => {
         underScrutiny: true,
       },
     });
-    res.json(
-      JSON.parse(
-        JSON.stringify(
-          {
-            message: "Task completed successfully",
-            user: updateUser,
-          },
-          safeReplacer
-        )
-      )
-    );
+    res.json({
+      message: "Task completed successfully",
+      user: updateUser,
+    });
     const title = "Task Reward Collected";
     const message =
       "Reward collected! Great job completing the task. Keep up the awesome work! ";
@@ -903,17 +869,10 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
       await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
     }
 
-    res.status(200).json(
-      JSON.parse(
-        JSON.stringify(
-          {
-            message: "Task status updated successfully",
-            updatedTask,
-          },
-          safeReplacer
-        )
-      )
-    );
+    res.status(200).json({
+      message: "Task status updated successfully",
+      updatedTask,
+    });
     if (status === "ADMIN_APPROVED") {
       const title = "Task has been verified by admin and ready to collect";
       const message = `Great news! Your task "${task.title}" has been verified. Collect your reward now and celebrate!`;
@@ -944,7 +903,7 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
  *       required: true
  *       schema:
  *         type: string
- *       description: The Twitter ID of the invitee to add (as a string to be safely converted to BigInt)
+ *       description: The Twitter ID of the invitee to add
  *   responses:
  *     200:
  *       description: User invited successfully
@@ -967,7 +926,7 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
 export const updateTwitterInvitee: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId!);
-    const twitterId = BigInt(req.params.twitterId as string);
+    const twitterId = req.params.twitterId as string;
 
     const user = await prisma.users.findUnique({ where: { id: userId } });
     if (!user) {
@@ -984,14 +943,7 @@ export const updateTwitterInvitee: RequestHandler = async (req, res) => {
         twitterInvitees: { push: twitterId },
       },
     });
-    res.json(
-      JSON.parse(
-        JSON.stringify(
-          { message: "User invited successfully", user: updatedUser },
-          safeReplacer
-        )
-      )
-    );
+    res.json({ message: "User invited successfully", user: updatedUser });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
@@ -1146,17 +1098,10 @@ export const rewardInviter: RequestHandler = async (req, res) => {
           await sendNotification(inviter.id, title, message);
         }
 
-        res.json(
-          JSON.parse(
-            JSON.stringify(
-              {
-                message: "Inviter rewarded successfully",
-                inviter: updatedInviter,
-              },
-              safeReplacer
-            )
-          )
-        );
+        res.json({
+          message: "Inviter rewarded successfully",
+          inviter: updatedInviter,
+        });
         return;
       }
     }
@@ -1228,7 +1173,7 @@ export const updateUser: RequestHandler = async (req, res) => {
         inviteLink: undefined,
       },
     });
-    res.json(JSON.parse(JSON.stringify(updatedUser, safeReplacer)));
+    res.json(updatedUser);
     return;
   } catch (error) {
     res.json({ error: "Internal server error" });
@@ -1273,7 +1218,7 @@ export const updateUserName: RequestHandler = async (req, res) => {
       data: { username },
     });
 
-    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
+    res.json(user);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -1324,7 +1269,7 @@ export const updateTwitterInfo: RequestHandler = async (req, res) => {
       },
     });
 
-    res.status(200).json(JSON.parse(JSON.stringify(user, safeReplacer)));
+    res.status(200).json(user);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal Server error" });
