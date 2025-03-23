@@ -208,7 +208,6 @@ export async function fetchFollowings(
 
       if (Array.isArray(data.followings)) {
         const newFollower = data.followings.map((following: any) => {
-          console.log(following.id.toString());
           return {
             id: following.id,
             displayName: following.name,
