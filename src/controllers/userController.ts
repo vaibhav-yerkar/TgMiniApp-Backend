@@ -481,6 +481,11 @@ export const getFollowingList: RequestHandler = async (req, res) => {
  *               image_url:
  *                 type: string
  *                 description: URL of the uploaded image
+ *               checkFor:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [NONE, FOLLOW, REPLY, RETWEET, QUOTE]
  *     responses:
  *       200:
  *         description: Task marked successfully
