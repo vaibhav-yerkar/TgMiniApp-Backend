@@ -415,7 +415,6 @@ async function runPythonScript(jsonStr: string) {
  */
 export async function createTwitterTask(): Promise<void> {
   const username = process.env.TWITTER_USERNAME;
-  console.log("Creating Twitter task for", username);
   try {
     const tweet = await fetchLatestTweet(username as string);
     if (!tweet) {
