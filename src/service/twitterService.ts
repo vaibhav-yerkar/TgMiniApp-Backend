@@ -175,15 +175,17 @@ export async function verifyQuotes(
 }
 
 /**
- * Fetches the user's followers.
+ * Fetches the user's followings.
  * It will keep fetching subsequent pages if available.
  *
  * @param twitterUserName - The username to look for among retweeters.
- * @returns List[Object{follower's-name, follower's-twitter-Id}] for a given twitterUserName.
+ * @param flag - A boolean flag to check if the user is a following joinzo or not.
+ * @returns List[Object{following's-name, following's-twitter-Id, following's display_name}] for a given twitterUserName.
  */
 export async function fetchFollowings(
-  twitterUserName: string
-): Promise<{ id: string; displayName: string; username: string }[]> {
+  twitterUserName: string,
+  flag: boolean = false
+): Promise<Boolean | { id: string; displayName: string; username: string }[]> {
   let cursor = "";
   let following: { id: string; displayName: string; username: string }[] = [];
   let hasNextPage = true;
@@ -197,6 +199,7 @@ export async function fetchFollowings(
 
       const response = await axios.get(url, {
         ...options,
+        responseType: "text",
         transformResponse: [
           (data: string) => {
             return JSONbig({ storeAsString: true }).parse(data);
@@ -207,14 +210,81 @@ export async function fetchFollowings(
       const data = response.data;
 
       if (Array.isArray(data.followings)) {
-        const newFollower = data.followings.map((following: any) => {
+        if (flag) {
+          const found = data.followings.some((following: any) => {
+            return (
+              following.screen_name &&
+              following.screen_name.toLowerCase() ===
+                process.env.TWITTER_USERNAME?.toLowerCase()
+            );
+          });
+          if (found) {
+            return true;
+          }
+        } else {
+          const newFollowing = data.followings.map((following: any) => {
+            return {
+              id: following.id,
+              displayName: following.name,
+              username: following.screen_name,
+            };
+          });
+          following = following.concat(newFollowing);
+        }
+      }
+
+      hasNextPage = data.has_next_page;
+      cursor = data.next_cursor;
+    }
+  } catch (error) {
+    console.error("Error in fetchFollowers:", error);
+    return flag ? false : [];
+  }
+  return flag ? false : following;
+}
+
+/**
+ * Fetches the user's followers.
+ * It will keep fetching subsequent pages if available.
+ *
+ * @param twitterUserName - The username to look for among retweeters.
+ * @returns List[Object{follower's-name, follower's-twitter-Id , follower's display_name}] for a given twitterUserName.
+ */
+export async function fetchFollowers(
+  twitterUserName: string
+): Promise<{ id: string; displayName: string; username: string }[]> {
+  let cursor = "";
+  let followers: { id: string; displayName: string; username: string }[] = [];
+  let hasNextPage = true;
+
+  try {
+    while (hasNextPage) {
+      let url = `${BASE_URL}/twitter/user/followers?userName=${twitterUserName}`;
+      if (cursor) {
+        url = `${url}&cursor=${cursor}`;
+      }
+
+      const response = await axios.get(url, {
+        ...options,
+        responseType: "text",
+        transformResponse: [
+          (data: string) => {
+            return JSONbig({ storeAsString: true }).parse(data);
+          },
+        ],
+      });
+
+      const data = response.data;
+
+      if (Array.isArray(data.followers)) {
+        const newFollower = data.followers.map((followers: any) => {
           return {
-            id: following.id,
-            displayName: following.name,
-            username: following.screen_name,
+            id: followers.id,
+            displayName: followers.name,
+            username: followers.screen_name,
           };
         });
-        following = following.concat(newFollower);
+        followers = followers.concat(newFollower);
       }
 
       hasNextPage = data.has_next_page;
@@ -224,7 +294,23 @@ export async function fetchFollowings(
     console.error("Error in fetchFollowers:", error);
     return [];
   }
-  return following;
+  return followers;
+}
+
+// Fetch mutual Connections by taking the intersection of followers and followings
+export async function fetchMutualConnections(
+  twitterUserName: string
+): Promise<{ id: string; displayName: string; username: string }[]> {
+  const followers = await fetchFollowers(twitterUserName);
+  const followings = (await fetchFollowings(twitterUserName)) as {
+    id: string;
+    displayName: string;
+    username: string;
+  }[];
+  const mutual = followers.filter((follower) =>
+    followings.some((following) => following.id === follower.id)
+  );
+  return mutual;
 }
 
 /**

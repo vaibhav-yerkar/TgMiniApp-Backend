@@ -1,14 +1,19 @@
+import { CheckFor } from "./../../node_modules/.prisma/client/index.d";
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import {
   sendNotification,
   sendBulkNotifications,
 } from "../service/notificationService";
-import { getTwitterInfo, fetchFollowings } from "../service/twitterService";
+import {
+  getTwitterInfo,
+  fetchMutualConnections,
+} from "../service/twitterService";
 import {
   verifyReplies,
   verifyQuotes,
   verifyRetweeters,
+  fetchFollowings,
 } from "../service/twitterService";
 
 declare global {
@@ -437,7 +442,7 @@ export const getFollowingList: RequestHandler = async (req, res) => {
       return;
     }
 
-    const following = await fetchFollowings(user.twitterUsername);
+    const following = await fetchMutualConnections(user.twitterUsername);
 
     if (following.length === 0) {
       res.status(404).json({ message: "Unable to fetch follower's list" });
@@ -497,7 +502,7 @@ export const markTask: RequestHandler = async (req, res) => {
   try {
     const userId = parseInt(req.userId! as string);
 
-    const { taskId, activity_url, image_url } = req.body;
+    const { taskId, activity_url, image_url, checkFor } = req.body;
     const status = "PENDING";
 
     if (!taskId) {
@@ -535,21 +540,41 @@ export const markTask: RequestHandler = async (req, res) => {
       if (task.platform === "TWITTER") {
         const parts = task.link.split("/");
         const tweetId = parts.pop() || "";
+        verifyed = true;
 
-        const verifyedReplies = await verifyReplies(
-          tweetId,
-          user.twitterUsername as string
-        );
-        const verifyedRetweeters = await verifyRetweeters(
-          tweetId,
-          user.twitterUsername as string
-        );
-        const verifyedQuotes = await verifyQuotes(
-          tweetId,
-          user.twitterUsername as string
-        );
-
-        verifyed = verifyedReplies && verifyedRetweeters && verifyedQuotes;
+        for (const entry of checkFor as string[]) {
+          if (entry === "NONE") {
+            verifyed = verifyed && true;
+          }
+          if (entry === "FOLLOW") {
+            const followResult = await fetchFollowings(
+              user.twitterUsername as string,
+              true
+            );
+            verifyed = verifyed && Boolean(followResult);
+          }
+          if (entry === "RETWEET") {
+            const verifyedRetweeters = await verifyRetweeters(
+              tweetId,
+              user.twitterUsername as string
+            );
+            verifyed = verifyed && verifyedRetweeters;
+          }
+          if (entry === "REPLY") {
+            const verifyedReplies = await verifyReplies(
+              tweetId,
+              user.twitterUsername as string
+            );
+            verifyed = verifyed && verifyedReplies;
+          }
+          if (entry === "QUOTE") {
+            const verifyedQuotes = await verifyQuotes(
+              tweetId,
+              user.twitterUsername as string
+            );
+            verifyed = verifyed && verifyedQuotes;
+          }
+        }
       } else if (task.platform === "TELEGRAM") {
         verifyed = false;
 
