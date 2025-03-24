@@ -151,9 +151,11 @@ export const login: RequestHandler = async (req, res) => {
         .json(JSON.parse(JSON.stringify({ token, user }, safeReplacer)));
     } else {
       const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-      res.status(200).json({ token, user });
+      res
+        .status(200)
+        .json(JSON.parse(JSON.stringify({ token, user }, safeReplacer)));
     }
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Internal server error " + error });
   }
 };
