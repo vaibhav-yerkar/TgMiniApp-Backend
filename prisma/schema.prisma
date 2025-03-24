@@ -1,3 +1,9 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
@@ -68,14 +74,13 @@ model Tasks {
   checkFor    CheckFor[] @default([])
   points      Int
   platform    Platform   @default(TELEGRAM)
-  createdAt  DateTime   @default(now())
+  createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 }
 
 model Users {
   id                Int            @id @default(autoincrement())
-  inviteLink        String         @unique
-  telegramId        String         @unique
+  telegramId        BigInt         @unique
   username          String         @unique
   totalScore        Int            @default(0)
   taskScore         Int            @default(0)
@@ -84,9 +89,9 @@ model Users {
   underScrutiny     TaskComplete[] @relation("taskUnderScrutiny")
   taskCompleted     Int[]          @default([])
   onceTaskCompleted Int[]          @default([])
-  Invitees          String[]       @default([])
-  twitterInvitees   String[]       @default([])
-  twitterId         String?        @unique
+  Invitees          BigInt[]       @default([])
+  twitterInvitees   BigInt[]       @default([])
+  twitterId         BigInt?        @unique
   twitterUsername   String?        @unique
   referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))
 }

@@ -5,6 +5,10 @@ import jwt from "jsonwebtoken";
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
 
+const safeReplacer = (_key: string, value: any) => {
+  return typeof value === "bigint" ? value.toString() : value;
+};
+
 /**
  * @swagger
  * /auth/register:
@@ -79,13 +83,14 @@ export const register: RequestHandler = async (req, res) => {
         return;
       }
     }
-    const inviteLink = `${inviteLinkBase}?startapp=inviter_${telegramId}`;
     const user = await prisma.users.create({
-      data: { username, telegramId, inviteLink },
+      data: { username, telegramId },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
-    res.status(200).json({ token, user });
+    res
+      .status(200)
+      .json(JSON.parse(JSON.stringify({ token, user }, safeReplacer)));
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }
@@ -107,7 +112,7 @@ export const register: RequestHandler = async (req, res) => {
  *               - telegramId
  *             properties:
  *               telegramId:
- *                 type: string
+ *                 type: integer
  *     responses:
  *       200:
  *         description: Login successful
@@ -141,7 +146,9 @@ export const login: RequestHandler = async (req, res) => {
         },
       });
       const token = jwt.sign({ userId: updatedUser.id }, JWT_SECRET);
-      res.status(200).json({ token, user });
+      res
+        .status(200)
+        .json(JSON.parse(JSON.stringify({ token, user }, safeReplacer)));
     } else {
       const token = jwt.sign({ userId: user.id }, JWT_SECRET);
       res.status(200).json({ token, user });

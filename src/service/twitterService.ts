@@ -24,7 +24,7 @@ const options = {
  */
 export async function verifyReplies(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -57,7 +57,7 @@ export async function verifyReplies(
             tweets.author &&
             tweets.author.userName &&
             tweets.author.userName.toLowerCase() ===
-              twitterUserName.toLowerCase(),
+              twitterUserName.toLowerCase()
         );
       }
       hasNextPage = data.has_next_page;
@@ -80,7 +80,7 @@ export async function verifyReplies(
  */
 export async function verifyRetweeters(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -108,7 +108,7 @@ export async function verifyRetweeters(
         verified = data.users.some(
           (users: any) =>
             users.userName &&
-            users.userName.toLowerCase() === twitterUserName.toLowerCase(),
+            users.userName.toLowerCase() === twitterUserName.toLowerCase()
         );
       }
       hasNextPage = data.has_next_page;
@@ -131,7 +131,7 @@ export async function verifyRetweeters(
  */
 export async function verifyQuotes(
   tweetId: string,
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<boolean> {
   let cursor = "";
   let verified = false;
@@ -184,10 +184,10 @@ export async function verifyQuotes(
  */
 export async function fetchFollowings(
   twitterUserName: string,
-  flag: boolean = false,
-): Promise<Boolean | { id: string; displayName: string; username: string }[]> {
+  flag: boolean = false
+): Promise<Boolean | { id: BigInt; displayName: string; username: string }[]> {
   let cursor = "";
-  let following: { id: string; displayName: string; username: string }[] = [];
+  let following: { id: bigint; displayName: string; username: string }[] = [];
   let hasNextPage = true;
 
   try {
@@ -224,7 +224,7 @@ export async function fetchFollowings(
         } else {
           const newFollowing = data.followings.map((following: any) => {
             return {
-              id: following.id,
+              id: BigInt(following.id),
               displayName: following.name,
               username: following.screen_name,
             };
@@ -251,10 +251,10 @@ export async function fetchFollowings(
  * @returns List[Object{follower's-name, follower's-twitter-Id , follower's display_name}] for a given twitterUserName.
  */
 export async function fetchFollowers(
-  twitterUserName: string,
-): Promise<{ id: string; displayName: string; username: string }[]> {
+  twitterUserName: string
+): Promise<{ id: BigInt; displayName: string; username: string }[]> {
   let cursor = "";
-  let followers: { id: string; displayName: string; username: string }[] = [];
+  let followers: { id: bigint; displayName: string; username: string }[] = [];
   let hasNextPage = true;
 
   try {
@@ -279,7 +279,7 @@ export async function fetchFollowers(
       if (Array.isArray(data.followers)) {
         const newFollower = data.followers.map((followers: any) => {
           return {
-            id: followers.id,
+            id: BigInt(followers.id),
             displayName: followers.name,
             username: followers.screen_name,
           };
@@ -299,16 +299,16 @@ export async function fetchFollowers(
 
 // Fetch mutual Connections by taking the intersection of followers and followings
 export async function fetchMutualConnections(
-  twitterUserName: string,
-): Promise<{ id: string; displayName: string; username: string }[]> {
+  twitterUserName: string
+): Promise<{ id: BigInt; displayName: string; username: string }[]> {
   const followers = await fetchFollowers(twitterUserName);
   const followings = (await fetchFollowings(twitterUserName)) as {
-    id: string;
+    id: BigInt;
     displayName: string;
     username: string;
   }[];
   const mutual = followers.filter((follower) =>
-    followings.some((following) => following.id === follower.id),
+    followings.some((following) => following.id === follower.id)
   );
   return mutual;
 }
@@ -320,7 +320,7 @@ export async function fetchMutualConnections(
  * @returns Object{twitterId, userName} for a given twitterUserName.
  */
 export async function getTwitterInfo(
-  twitterUserName: string,
+  twitterUserName: string
 ): Promise<{ id: string; name: string }> {
   try {
     let url = `${BASE_URL}/twitter/user/info?userName=${twitterUserName}`;
@@ -358,7 +358,7 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
     const data = response.data;
     if (Array.isArray(data.data.tweets) && data.data.tweets.length > 0) {
       const validTweets = data.data.tweets.filter(
-        (tweet: any) => tweet.retweeted_tweet === null,
+        (tweet: any) => tweet.retweeted_tweet === null
       );
       if (validTweets.length === 0) {
         return null;
