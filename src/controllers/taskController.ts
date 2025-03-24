@@ -15,6 +15,7 @@ const prisma = new PrismaClient();
  *         - link
  *         - type
  *         - points
+ *         - isUploadRequired
  *       properties:
  *         id:
  *           type: integer
@@ -35,6 +36,10 @@ const prisma = new PrismaClient();
  *           type: string
  *           enum: [NONE, LINK, IMAGE, BOTH]
  *           default: NONE
+ *         platform:
+ *           type: string
+ *           enum: [INDEPENDENT, TWITTER, TELEGRAM]
+ *           default: TELEGRAM
  *         type:
  *           type: string
  *           enum: [DAILY, ONCE]
