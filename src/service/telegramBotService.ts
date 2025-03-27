@@ -154,70 +154,54 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
-    // if (chatId.toString() !== COMMUNITY_CHAT_ID) {
-    //   return;
-    // }
+    const userFrom = msg.from;
+    const isPrivateChat = msg.chat.type === "private";
+
+    if (!isPrivateChat) return;
+
+    if (userFrom) {
+      bot.sendMessage(
+        chatId,
+        "Welcome to our Bot! We're excited to have you on board. Use /start to get started or explore available commands."
+      );
+    }
     const text = msg.text || "";
     const userId = msg.from?.id;
     const username = msg.from?.username || "there";
     const firstName = msg.from?.first_name || username;
 
-    const isBotMentioned =
-      TELEGRAM_BOT_USERNAME &&
-      (text.toLowerCase().includes(`@${TELEGRAM_BOT_USERNAME.toLowerCase()}`) ||
-        text.match(new RegExp(`\\/\\w+@${TELEGRAM_BOT_USERNAME}`, "i")));
+    // const isBotMentioned =
+    //   TELEGRAM_BOT_USERNAME &&
+    //   (text.toLowerCase().includes(`@${TELEGRAM_BOT_USERNAME.toLowerCase()}`) ||
+    //     text.match(new RegExp(`\\/\\w+@${TELEGRAM_BOT_USERNAME}`, "i")));
 
-    if (!isBotMentioned && msg.chat.type !== "private") {
-      return;
-    }
+    // if (!isBotMentioned && msg.chat.type !== "private") {
+    //   return;
+    // }
 
     const text_arr = text.split(" ");
 
     if (text_arr.includes("/start")) {
       try {
-        const isPrivateChat = msg.chat.type === "private";
-
         if (TELEGRAM_MINI_APP) {
-          if (isPrivateChat) {
-            bot.sendMessage(
-              chatId,
-              `Welcome ${escapeMarkdown(
-                firstName
-              )}! Let's get you started with our Mini App.`,
-              {
-                reply_markup: {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "🚀 Open Mini App",
-                        web_app: { url: TELEGRAM_MINI_APP },
-                      },
-                    ],
+          bot.sendMessage(
+            chatId,
+            `Welcome ${escapeMarkdown(
+              firstName
+            )}! Let's get you started with our Mini App.`,
+            {
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    {
+                      text: "🚀 Open Mini App",
+                      web_app: { url: TELEGRAM_MINI_APP },
+                    },
                   ],
-                },
-              }
-            );
-          } else {
-            bot.sendMessage(
-              chatId,
-              `Welcome ${escapeMarkdown(
-                firstName
-              )}! To use the Mini App, please start a private chat with me.`,
-              {
-                parse_mode: "Markdown",
-                reply_markup: {
-                  inline_keyboard: [
-                    [
-                      {
-                        text: "🚀 Start Private Chat",
-                        url: `https://t.me/${TELEGRAM_BOT_USERNAME}`,
-                      },
-                    ],
-                  ],
-                },
-              }
-            );
-          }
+                ],
+              },
+            }
+          );
         } else {
           bot.sendMessage(
             chatId,
