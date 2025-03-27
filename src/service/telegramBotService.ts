@@ -155,33 +155,19 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const userFrom = msg.from;
-    const isPrivateChat = msg.chat.type === "private";
-
-    if (!isPrivateChat) return;
-
-    if (userFrom) {
-      bot.sendMessage(
-        chatId,
-        "Welcome to our Bot! We're excited to have you on board. Use /start to get started or explore available commands."
-      );
-    }
-    const text = msg.text || "";
     const userId = msg.from?.id;
     const username = msg.from?.username || "there";
     const firstName = msg.from?.first_name || username;
+    const isPrivateChat = msg.chat.type === "private";
 
-    // const isBotMentioned =
-    //   TELEGRAM_BOT_USERNAME &&
-    //   (text.toLowerCase().includes(`@${TELEGRAM_BOT_USERNAME.toLowerCase()}`) ||
-    //     text.match(new RegExp(`\\/\\w+@${TELEGRAM_BOT_USERNAME}`, "i")));
-
-    // if (!isBotMentioned && msg.chat.type !== "private") {
-    //   return;
-    // }
-
+    const text = msg.text || "";
     const text_arr = text.split(" ");
 
-    if (text_arr.includes("/start")) {
+    if (!isPrivateChat) return;
+    if (text === "/welcome") {
+      bot.sendMessage(chatId, "Welcome to the community!");
+      return;
+    } else if (text_arr.includes("/start")) {
       try {
         if (TELEGRAM_MINI_APP) {
           bot.sendMessage(
