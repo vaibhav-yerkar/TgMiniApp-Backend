@@ -21,6 +21,7 @@ datasource db {
 enum TaskType {
   DAILY
   ONCE
+  PARTNERSHIP
 }
 
 enum TaskStatus {

@@ -15,7 +15,6 @@ const prisma = new PrismaClient();
  *         - link
  *         - type
  *         - points
- *         - isUploadRequired
  *       properties:
  *         id:
  *           type: integer
@@ -42,7 +41,7 @@ const prisma = new PrismaClient();
  *           default: TELEGRAM
  *         type:
  *           type: string
- *           enum: [DAILY, ONCE]
+ *           enum: [DAILY, ONCE, PARTNERSHIP]
  *         checkFor:
  *           type: array
  *           items:
@@ -50,8 +49,6 @@ const prisma = new PrismaClient();
  *             enum: [ FOLLOW, REPLY, RETWEET, REACT, QUOTE]
  *         points:
  *           type: integer
- *         isUploadRequired:
- *           type: boolean
  */
 
 /**
@@ -144,7 +141,7 @@ export const getTask: RequestHandler = async (req, res): Promise<void> => {
  */
 export const getDailyTasks: RequestHandler = async (
   req,
-  res
+  res,
 ): Promise<void> => {
   try {
     const tasks = await prisma.tasks.findMany({
@@ -195,6 +192,42 @@ export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
 
 /**
  * @swagger
+ * /tasks/partnership:
+ *   get:
+ *     summary: Get all partnership tasks
+ *     tags: [Tasks - User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of partnership tasks
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Task'
+ */
+export const getPartenershipTasks: RequestHandler = async (
+  req,
+  res,
+): Promise<void> => {
+  try {
+    const tasks = await prisma.tasks.findMany({
+      where: {
+        type: "PARTNERSHIP",
+      },
+    });
+    res.json(tasks);
+    return;
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+/**
+ * @swagger
  * /tasks:
  *   post:
  *     summary: Create a new task
@@ -228,11 +261,9 @@ export const getOnceTasks: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [NONE, LINK, IMAGE, BOTH]
  *               type:
  *                 type: string
- *                 enum: [DAILY, ONCE]
+ *                 enum: [DAILY, ONCE, PARTNERSHIP]
  *               points:
  *                 type: integer
- *               isUploadRequired:
- *                 type: boolean
  *     responses:
  *       201:
  *         description: Task created
@@ -290,11 +321,9 @@ export const createTask: RequestHandler = async (req, res): Promise<void> => {
  *                 enum: [NONE, LINK, IMAGE, BOTH]
  *               type:
  *                 type: string
- *                 enum: [DAILY, ONCE]
+ *                 enum: [DAILY, ONCE, PARTNERSHIP]
  *               points:
  *                 type: integer
- *               isUploadRequired:
- *                 type: boolean
  *     responses:
  *       200:
  *         description: Task updated

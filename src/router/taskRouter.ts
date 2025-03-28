@@ -3,6 +3,7 @@ import {
   getAllTasks,
   getDailyTasks,
   getOnceTasks,
+  getPartenershipTasks,
   createTask,
   updateTask,
   deleteTask,
@@ -16,6 +17,7 @@ const router = express.Router();
 
 router.get("/daily", auth, getDailyTasks);
 router.get("/once", auth, getOnceTasks);
+router.get("/partnership", auth, getPartenershipTasks);
 router.get("/", authOrAdmin, getAllTasks);
 router.get("/:id", authOrAdmin, getTask);
 
