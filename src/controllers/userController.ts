@@ -410,10 +410,12 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
         new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
-    res.status(200).json({ tasks: tasks });
+    res
+      .status(200)
+      .json(JSON.parse(JSON.stringify({ tasks: tasks }, safeReplacer)));
     return;
   } catch (error) {
-    res.status(500).json({ error: "Internal server error " });
+    res.status(500).json({ error: "Internal server error " + error });
     return;
   }
 };
