@@ -301,11 +301,8 @@ export const getOverallLeaderboard: RequestHandler = async (req, res) => {
 
     res.json(
       JSON.parse(
-        JSON.stringify(
-          { currentUser: userPosition, leaderboard },
-          safeReplacer,
-        ),
-      ),
+        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
+      )
     );
     return;
   } catch (error) {
@@ -349,11 +346,8 @@ export const getLeaderboard: RequestHandler = async (req, res) => {
 
     res.json(
       JSON.parse(
-        JSON.stringify(
-          { currentUser: userPosition, leaderboard },
-          safeReplacer,
-        ),
-      ),
+        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
+      )
     );
     return;
   } catch (error) {
@@ -399,15 +393,17 @@ export const getUnderScrutinyTasks: RequestHandler = async (req, res) => {
     users = users.filter((user) => user.underScrutiny.length > 0);
 
     let tasks = users.flatMap((user) =>
-      user.underScrutiny.map((task) => ({
-        ...task,
-        telegramId: user.telegramId,
-      })),
+      user.underScrutiny
+        .filter((task) => task.status === "PENDING")
+        .map((task) => ({
+          ...task,
+          telegramId: user.telegramId,
+        }))
     );
 
     tasks.sort(
       (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
 
     res
@@ -473,7 +469,7 @@ export const getFollowingList: RequestHandler = async (req, res) => {
     res
       .status(200)
       .json(
-        JSON.parse(JSON.stringify({ followings: following }, safeReplacer)),
+        JSON.parse(JSON.stringify({ followings: following }, safeReplacer))
       );
   } catch (error) {
     res.status(500).json({ error: "Internal server error " + error });
@@ -573,25 +569,25 @@ export const markTask: RequestHandler = async (req, res) => {
           } else if (entry === "FOLLOW") {
             const followResult = await fetchFollowings(
               user.twitterUsername as string,
-              true,
+              true
             );
             verifyed = verifyed && Boolean(followResult);
           } else if (entry === "RETWEET") {
             const verifyedRetweeters = await verifyRetweeters(
               tweetId,
-              user.twitterUsername as string,
+              user.twitterUsername as string
             );
             verifyed = verifyed && verifyedRetweeters;
           } else if (entry === "REPLY") {
             const verifyedReplies = await verifyReplies(
               tweetId,
-              user.twitterUsername as string,
+              user.twitterUsername as string
             );
             verifyed = verifyed && verifyedReplies;
           } else if (entry === "QUOTE") {
             const verifyedQuotes = await verifyQuotes(
               tweetId,
-              user.twitterUsername as string,
+              user.twitterUsername as string
             );
             verifyed = verifyed && verifyedQuotes;
           }
@@ -612,8 +608,8 @@ export const markTask: RequestHandler = async (req, res) => {
 
         const apiResponse = await fetch(
           `https://api.telegram.org/bot${bot_token}/getChatMember?chat_id=${chat_id}&user_id=${BigInt(
-            user.telegramId,
-          )}`,
+            user.telegramId
+          )}`
         );
 
         const data = await apiResponse.json();
@@ -651,9 +647,9 @@ export const markTask: RequestHandler = async (req, res) => {
               message: "Task completed successfully",
               user: updateUser,
             },
-            safeReplacer,
-          ),
-        ),
+            safeReplacer
+          )
+        )
       );
       const title = "Task Completed Successfully";
       const message =
@@ -700,9 +696,9 @@ export const markTask: RequestHandler = async (req, res) => {
             message: "Task marked successfully",
             user: updatedUser,
           },
-          safeReplacer,
-        ),
-      ),
+          safeReplacer
+        )
+      )
     );
 
     const title = "Task Marked for Review";
@@ -773,7 +769,7 @@ export const completeTask: RequestHandler = async (req, res) => {
     }
 
     const taskUnderScrutiny = user.underScrutiny.find(
-      (ts) => ts.taskId === taskId,
+      (ts) => ts.taskId === taskId
     );
     if (!taskUnderScrutiny) {
       res.status(400).json({ error: "Task not marked for review" });
@@ -815,9 +811,9 @@ export const completeTask: RequestHandler = async (req, res) => {
             message: "Task completed successfully",
             user: updateUser,
           },
-          safeReplacer,
-        ),
-      ),
+          safeReplacer
+        )
+      )
     );
     const title = "Task Reward Collected";
     const message =
@@ -907,7 +903,7 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     }
 
     const taskUnderScrutiny = user.underScrutiny.find(
-      (ts) => ts.taskId === taskIdNum,
+      (ts) => ts.taskId === taskIdNum
     );
     if (!taskUnderScrutiny) {
       res.status(400).json({ error: "Task not marked for review" });
@@ -1014,9 +1010,9 @@ export const updateTwitterInvitee: RequestHandler = async (req, res) => {
       JSON.parse(
         JSON.stringify(
           { message: "User invited successfully", user: updatedUser },
-          safeReplacer,
-        ),
-      ),
+          safeReplacer
+        )
+      )
     );
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
@@ -1179,9 +1175,9 @@ export const rewardInviter: RequestHandler = async (req, res) => {
                 message: "Inviter rewarded successfully",
                 inviter: updatedInviter,
               },
-              safeReplacer,
-            ),
-          ),
+              safeReplacer
+            )
+          )
         );
         return;
       }
