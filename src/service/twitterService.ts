@@ -184,7 +184,8 @@ export async function verifyQuotes(
  */
 export async function fetchFollowings(
   twitterUserName: string,
-  flag: boolean = false
+  flag: boolean = false,
+  twitterHandle: string = process.env.TWITTER_USERNAME?.toLowerCase() as string
 ): Promise<Boolean | { id: BigInt; displayName: string; username: string }[]> {
   let cursor = "";
   let following: { id: bigint; displayName: string; username: string }[] = [];
@@ -215,7 +216,7 @@ export async function fetchFollowings(
             return (
               following.screen_name &&
               following.screen_name.toLowerCase() ===
-                process.env.TWITTER_USERNAME?.toLowerCase()
+                twitterHandle.toLowerCase()
             );
           });
           if (found) {

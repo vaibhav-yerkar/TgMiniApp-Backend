@@ -569,7 +569,8 @@ export const markTask: RequestHandler = async (req, res) => {
           } else if (entry === "FOLLOW") {
             const followResult = await fetchFollowings(
               user.twitterUsername as string,
-              true
+              true,
+              tweetId
             );
             verifyed = verifyed && Boolean(followResult);
           } else if (entry === "RETWEET") {
