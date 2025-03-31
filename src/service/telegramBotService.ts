@@ -11,6 +11,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   const WEBHOOK_URL = process.env.WEBHOOK_URL;
   const isProduction = process.env.NODE_ENV === "production";
   const TELEGRAM_MINI_APP = process.env.TELEGRAM_MINI_APP;
+  const TELEGRAM_COMMUNITY_LINK = process.env.TELEGRAM_COMMUNITY_LINK;
+
+  // ------------------------------------------------------------
 
   if (!TELEGRAM_BOT_TOKEN) {
     throw new Error("TELEGRAM_BOT_TOKEN is missing");
@@ -150,7 +153,8 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       return "Sorry, I couldn't fetch the recent tasks at the moment. Please try again later.";
     }
   };
-  // ---------------------------------------------------
+
+  // ------------------------------------------------------------
 
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -158,15 +162,92 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const userId = msg.from?.id;
     const username = msg.from?.username || "there";
     const firstName = msg.from?.first_name || username;
-    const isPrivateChat = msg.chat.type === "private";
+    // ------------------------------------------------------------
+    if (msg.new_chat_members && chatId.toString() === COMMUNITY_CHAT_ID) {
+      const chatInviteLink = (msg as any).invite_link?.invite_link;
+      if (chatInviteLink && chatInviteLink.includes(TELEGRAM_COMMUNITY_LINK)) {
+        const inviterIdMatch = chatInviteLink.match(
+          new RegExp(`${TELEGRAM_COMMUNITY_LINK}?invite=(\\d+)`)
+        );
+        if (inviterIdMatch && inviterIdMatch[1]) {
+          const inviterId = BigInt(inviterIdMatch[1]);
+          try {
+            const inviter = await prisma.inviteTrack.findUnique({
+              where: { telegramId: inviterId },
+            });
 
+            for (const newMember of msg.new_chat_members) {
+              const newMemberId = BigInt(newMember.id);
+              const newMemberUsername =
+                newMember.username || newMember.first_name || "Unknown";
+
+              const existingUser = await prisma.inviteTrack.findUnique({
+                where: { telegramId: newMemberId },
+              });
+              if (!existingUser) {
+                await prisma.inviteTrack.create({
+                  data: {
+                    telegramId: newMemberId,
+                    username: newMemberUsername,
+                    Invites: [],
+                  },
+                });
+              }
+              if (inviter) {
+                const updateInvites = inviter.Invites.includes(newMemberId)
+                  ? inviter.Invites
+                  : [...inviter.Invites, newMemberId];
+                await prisma.inviteTrack.update({
+                  where: { telegramId: inviterId },
+                  data: {
+                    Invites: updateInvites,
+                  },
+                });
+              }
+            }
+          } catch (err) {
+            console.log("Error in updating invite track:", err);
+          }
+        }
+      }
+    }
+
+    // ------------------------------------------------------------
     const text = msg.text || "";
     const text_arr = text.split(" ");
 
-    if (!isPrivateChat) return;
-    if (text === "/welcome") {
-      bot.sendMessage(chatId, "Welcome to the community!");
-      return;
+    if (msg.chat.type !== "private") return;
+    if (text === "/generate") {
+      if (userId) {
+        try {
+          const telegramId = BigInt(userId);
+          let user = await prisma.inviteTrack.findUnique({
+            where: { telegramId },
+          });
+          if (!user) {
+            user = await prisma.inviteTrack.create({
+              data: {
+                telegramId,
+                username,
+                Invites: [],
+              },
+            });
+          }
+          const inviteLink = TELEGRAM_COMMUNITY_LINK + `?invite=${telegramId}`;
+          bot.sendMessage(
+            chatId,
+            `Your invite link is : ${inviteLink}\n Share this link to invite others to our community!`
+          );
+        } catch (err) {
+          console.log("Error in generating invite link:", err);
+          bot.sendMessage(
+            chatId,
+            "Sorry, I couldn't generate your invite link."
+          );
+        }
+      } else {
+        bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+      }
     } else if (text_arr.includes("/start")) {
       try {
         if (TELEGRAM_MINI_APP) {
@@ -226,7 +307,8 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       )}! Here are the available commands:\n\n` +
       `/start - Open the Mini App\n` +
       `/leaderboard - View the current leaderboard\n` +
-      `/tasks - See recent tasks`;
+      `/tasks - See recent tasks\n` +
+      `/generate - Get your custom invite link`;
     bot.sendMessage(chatId, commandsList);
   });
 

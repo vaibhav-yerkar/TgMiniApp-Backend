@@ -41,8 +41,8 @@ export const sendReminderNotifications = async () => {
 
 /**
  * Initializes cron jobs:
- * - Every hour, fetch the latest tweet from "joinzo" and create a Twitter task.
- * - Every hour, remove Twitter tasks older than 24 hours.
+ * - Every 20 min, fetch the latest tweet from "joinzo" and create a Twitter task.
+ * - Every 20 min, remove Twitter tasks older than 24 hours.
  */
 export function initializeTwitterTaskScheduler(): void {
   cron.schedule("*/20 * * * *", async () => {

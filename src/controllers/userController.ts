@@ -1336,6 +1336,7 @@ export const updateTwitterInfo: RequestHandler = async (req, res) => {
     const userInfo = await getTwitterInfo(userName);
     if (userInfo.id === "0" || userInfo.name == "") {
       res.status(404).json({ message: "Unable to fetch userInfo" });
+      return;
     }
 
     const user = await prisma.users.update({

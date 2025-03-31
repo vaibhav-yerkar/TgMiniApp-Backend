@@ -110,3 +110,10 @@ model Anmt {
   image       String
   anmtTasks   Int[]
 }
+
+model InviteTrack {
+  id         Int     @id @default(autoincrement())
+  telegramId BigInt  @unique
+  username   String  @unique
+  Invites    BigInt[] @default([])
+}
