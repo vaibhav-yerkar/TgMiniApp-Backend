@@ -156,7 +156,7 @@ export async function verifyQuotes(
       const data = response.data;
 
       if (Array.isArray(data.tweets)) {
-        verified = data.quotes.some((tweets: any) => {
+        verified = data.tweets.some((tweets: any) => {
           tweets.author &&
             tweets.author.userName &&
             tweets.author.userName.toLowerCase() ===
