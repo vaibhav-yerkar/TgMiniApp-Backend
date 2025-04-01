@@ -156,11 +156,13 @@ export async function verifyQuotes(
       const data = response.data;
 
       if (Array.isArray(data.tweets)) {
-        verified = data.tweets.some((tweet: any) => {
-          tweet.author &&
-            tweet.author.userName &&
-            tweet.author.userName.toLowerCase() ===
-              twitterUserName.toLowerCase();
+        verified = data.tweets.some((tweets: any) => {
+          return (
+            tweets.author &&
+            tweets.author.userName &&
+            tweets.author.userName.toLowerCase() ===
+              twitterUserName.toLowerCase()
+          );
         });
       }
 
