@@ -204,6 +204,27 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                   },
                 });
               }
+              const user = await prisma.users.findUnique({
+                where: { telegramId: inviterId },
+              });
+              if (user) {
+                await prisma.users.update({
+                  where: { telegramId: inviterId },
+                  data: {
+                    totalScore: {
+                      increment: parseInt(
+                        process.env.INVITE_REWARD_AMOUNT as string
+                      ),
+                    },
+                    inviteScore: {
+                      increment: parseInt(
+                        process.env.INVITE_REWARD_AMOUNT as string
+                      ),
+                    },
+                    Invitees: { push: newMemberId },
+                  },
+                });
+              }
             }
           } catch (err) {
             console.log("Error in updating invite track:", err);
@@ -214,10 +235,9 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     // ------------------------------------------------------------
     const text = msg.text || "";
-    const text_arr = text.split(" ");
 
     if (msg.chat.type !== "private") return;
-    if (text === "/generate") {
+    if (text === "/invite") {
       if (userId) {
         try {
           const telegramId = BigInt(userId);
@@ -236,32 +256,36 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
           const inviteLink = TELEGRAM_COMMUNITY_LINK + `?invite=${telegramId}`;
           bot.sendMessage(
             chatId,
-            `Your invite link is : ${inviteLink}\n Share this link to invite others to our community!`
+            `Your invite link is :\n ${inviteLink}\n\n Share this link to invite others to our community and start earning rewards!`
           );
+          return;
         } catch (err) {
           console.log("Error in generating invite link:", err);
           bot.sendMessage(
             chatId,
             "Sorry, I couldn't generate your invite link."
           );
+          return;
         }
       } else {
         bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+        return;
       }
-    } else if (text_arr.includes("/start")) {
+    }
+    if (text === "/start") {
       try {
         if (TELEGRAM_MINI_APP) {
           bot.sendMessage(
             chatId,
             `Welcome ${escapeMarkdown(
               firstName
-            )}! Let's get you started with our Mini App.`,
+            )}!\n\n Let's get you started with ZO App.`,
             {
               reply_markup: {
                 inline_keyboard: [
                   [
                     {
-                      text: "🚀 Open Mini App",
+                      text: "🚀 Open Zo App",
                       web_app: { url: TELEGRAM_MINI_APP },
                     },
                   ],
@@ -274,17 +298,17 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             chatId,
             `Welcome ${escapeMarkdown(
               firstName
-            )}! Unfortunately, the Mini App URL is not configured.`
+            )}!\n Unfortunately, the Zo App URL is not configured.`
           );
         }
         return;
       } catch (error) {
-        bot.sendMessage(chatId, "Sorry, I couldn't start the Mini App.");
+        bot.sendMessage(chatId, "Sorry, I couldn't start the Zo App.");
       }
     }
 
     // Command: /leaderboard
-    if (text_arr.includes("/leaderboard")) {
+    if (text === "/leaderboard") {
       if (userId) {
         const leaderboardText = await formatLeaderBoard(userId);
         bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
@@ -295,20 +319,19 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /task or /tasks
-    if (text_arr.includes("/tasks")) {
+    if (text === "/tasks") {
       const tasksText = await getRecentTasks();
       bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
       return;
     }
 
-    const commandsList =
-      `Hello ${escapeMarkdown(
-        firstName
-      )}! Here are the available commands:\n\n` +
-      `/start - Open the Mini App\n` +
-      `/leaderboard - View the current leaderboard\n` +
-      `/tasks - See recent tasks\n` +
-      `/generate - Get your custom invite link`;
+    const commandsList = `Hello ${escapeMarkdown(
+      firstName
+    )}!\n\nWelcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.\n\nAvailable Commands:\n
+      \t/start - Open the Mini App\n
+      \t/leaderboard - View the current leaderboard\n
+      \t/tasks - See recent tasks and updates\n
+      \t/invite - Invite your friends to earn rewards`;
     bot.sendMessage(chatId, commandsList);
   });
 

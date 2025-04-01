@@ -253,12 +253,18 @@ export const getUsername: RequestHandler = async (req, res) => {
     const existingUser = await prisma.users.findUnique({
       where: { telegramId: telegramId },
     });
-
     if (!existingUser) {
-      res.json({ error: "User not found" });
+      const invitedUser = await prisma.inviteTrack.findUnique({
+        where: { telegramId: telegramId },
+      });
+      if (!invitedUser) {
+        res.json({ error: "User not found" });
+        return;
+      }
+      res.json(invitedUser.username);
       return;
     }
-    res.json(existingUser.username);
+    res.json(existingUser?.username);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
