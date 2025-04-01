@@ -559,9 +559,8 @@ export const markTask: RequestHandler = async (req, res) => {
     if (task.platform === "TWITTER" || task.platform === "TELEGRAM") {
       let verifyed = false;
       if (task.platform === "TWITTER") {
-        const parts = task.link.split("/");
-        const tweetId = parts.pop() || "";
         verifyed = true;
+        const tweetId = splitLink(task.link);
 
         for (const entry of task.checkFor as string[]) {
           if (entry === "REACT") {
@@ -1407,4 +1406,26 @@ export const deleteUser: RequestHandler = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
     return;
   }
+};
+
+const splitLink = (link: string) => {
+  let tweetId = "";
+  try {
+    const urlObj = new URL(link);
+    const pathParts = urlObj.pathname.split("/").filter(Boolean);
+    // Check for the standard format: /username/status/tweetId
+    const statusIndex = pathParts.findIndex(
+      (part) => part.toLowerCase() === "status"
+    );
+    if (statusIndex !== -1 && pathParts.length > statusIndex + 1) {
+      tweetId = pathParts[statusIndex + 1];
+    } else {
+      tweetId = pathParts[pathParts.length - 1];
+    }
+  } catch (e) {
+    const parts = link.split("/");
+    let rawTweetId = parts.pop() || "";
+    tweetId = rawTweetId.split("?")[0];
+  }
+  return tweetId;
 };
