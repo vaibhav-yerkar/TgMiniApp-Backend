@@ -88,13 +88,14 @@ model Users {
   inviteScore       Int            @default(0)
   lastResetDate     DateTime       @default(now())
   underScrutiny     TaskComplete[] @relation("taskUnderScrutiny")
-  taskCompleted     Int[]          @default([])
-  onceTaskCompleted Int[]          @default([])
+  taskCompleted     Json[]          @default([])
+  onceTaskCompleted Json[]          @default([])
   Invitees          BigInt[]       @default([])
   twitterInvitees   BigInt[]       @default([])
   twitterId         BigInt?        @unique
   twitterUsername   String?        @unique
   referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))
+  firebaseId       String?         @unique
 }
 
 model Admin {

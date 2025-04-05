@@ -11,6 +11,8 @@ import {
   initializeTwitterTaskScheduler,
 } from "./config/cron-work";
 
+// import { verifyQuotes } from "./service/twitterService";
+
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
 import authRouter from "./router/authRouter";
@@ -61,6 +63,12 @@ initlialiseTelegramBot(app).catch((err) => {
 });
 
 initializeTwitterTaskScheduler();
+
+// const func = async () => {
+//   const result = await verifyQuotes("1905060156926205961", "assme_44");
+//   console.log(result);
+// };
+// func();
 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);

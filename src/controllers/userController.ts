@@ -92,11 +92,11 @@ const safeReplacer = (_key: string, value: any) => {
  *         taskCompleted:
  *           type: array
  *           items:
- *             type: integer
+ *             type: object
  *         onceTaskCompleted:
  *           type: array
  *           items:
- *             type: integer
+ *             type: object
  *         Invitees:
  *           type: array
  *           items:
@@ -634,9 +634,13 @@ export const markTask: RequestHandler = async (req, res) => {
         totalScore: { increment: task.points },
       };
       if (task.type === "DAILY") {
-        updateData.taskCompleted = { push: taskId };
+        updateData.taskCompleted = {
+          push: { taskId: taskId, createdAt: new Date().toISOString() } as any,
+        };
       } else {
-        updateData.onceTaskCompleted = { push: taskId };
+        updateData.onceTaskCompleted = {
+          push: { taskId: taskId, createdAt: new Date().toISOString() } as any,
+        };
       }
 
       const updateUser = await prisma.users.update({
@@ -665,8 +669,8 @@ export const markTask: RequestHandler = async (req, res) => {
     }
 
     const isTaskCompleted =
-      user.taskCompleted.includes(taskIdNum) ||
-      user.onceTaskCompleted.includes(taskIdNum);
+      user.taskCompleted.some((t: any) => t.taskId === taskIdNum) ||
+      user.onceTaskCompleted.some((t: any) => t.taskId === taskIdNum);
     if (user.underScrutiny.length > 0 || isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
@@ -767,8 +771,8 @@ export const completeTask: RequestHandler = async (req, res) => {
 
     const isTaskCompleted =
       task.type === "DAILY"
-        ? user.taskCompleted.find((id) => id === taskId)
-        : user.onceTaskCompleted.find((id) => id === taskId);
+        ? user.taskCompleted.find((task: any) => task.taskId === taskId)
+        : user.onceTaskCompleted.find((task: any) => task.taskId === taskId);
     if (isTaskCompleted) {
       res.status(400).json({ error: "Task already completed" });
       return;
@@ -798,9 +802,13 @@ export const completeTask: RequestHandler = async (req, res) => {
     };
 
     if (task.type === "DAILY") {
-      updateData.taskCompleted = { push: taskId };
+      updateData.taskCompleted = {
+        push: { taskId: taskId, createdAt: new Date().toISOString() } as any,
+      };
     } else {
-      updateData.onceTaskCompleted = { push: taskId };
+      updateData.onceTaskCompleted = {
+        push: { taskId: taskId, createdAt: new Date().toISOString() } as any,
+      };
     }
 
     const updateUser = await prisma.users.update({

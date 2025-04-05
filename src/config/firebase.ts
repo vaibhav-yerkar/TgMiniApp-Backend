@@ -10,8 +10,8 @@ if (isProduction) {
   serviceAccount = require("./firebase-admin.json");
 }
 
-admin.initializeApp({
+export const manager = admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
 });
 
-export const db = admin.firestore();
+export const db = manager.firestore();
