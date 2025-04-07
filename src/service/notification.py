@@ -19,7 +19,7 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_NOTIFICATION_CHAT_ID")
 openai_client = openai.AsyncOpenAI(api_key=OPENAI_API_KEY)
 bot = telegram.Bot(token=TELEGRAM_BOT_TOKEN)
 
-# Templates for different tweet types (note: tweet and tweet_link will be escaped)
+# Templates for different tweet types
 MESSAGE_TEMPLATES = {
     "partnership": "🤝 *New Partnership Alert!* 🤝\n\n{tweet}\n\nFollow us on X to stay tuned!\n\n🔗 [Tweet Link]({tweet_link})",
     "announcement": "🚀 *Big Announcement!* 🚀\n\n{tweet}\n\nStay updated with the latest news!\n\n🔗 [Tweet Link]({tweet_link})",
@@ -46,20 +46,16 @@ def load_processed_tweets():
 
 def save_processed_tweets(last_hash, ignored_hashes, last_message):
     with open("processed_tweets.json", "w", encoding="utf-8") as file:
-        json.dump(
-            {
-                "last_tweet_hash": last_hash,
-                "ignored_hashes": list(ignored_hashes),
-                "last_sent_message": last_message
-            },
-            file,
-            ensure_ascii=False
-        )
+        json.dump({
+            "last_tweet_hash": last_hash,
+            "ignored_hashes": list(ignored_hashes),
+            "last_sent_message": last_message
+        }, file, ensure_ascii=False)
 
 async def categorize_tweet(tweet):
     try:
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -80,7 +76,7 @@ async def categorize_tweet(tweet):
 async def generate_refined_message(tweet, category, tweet_link):
     try:
         response = await openai_client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -102,16 +98,16 @@ async def generate_refined_message(tweet, category, tweet_link):
         print(f"❌ OpenAI message generation error: {e}")
         final_tweet = tweet  # fallback
 
-    # Escape tweet content and tweet_link for MarkdownV2
-    safe_tweet = escape_markdown(final_tweet, version=2)
-    safe_link = escape_markdown(tweet_link, version=2)
+    # Escape only characters required for MarkdownV2 (not over-escaping!)
+    safe_tweet = escape_markdown(final_tweet, version=2).replace("\\!", "!")
+    safe_link = escape_markdown(tweet_link, version=2).replace("\\!", "!")
 
-    raw_message = MESSAGE_TEMPLATES[category].format(
+    message = MESSAGE_TEMPLATES[category].format(
         tweet=safe_tweet,
         tweet_link=safe_link
     )
 
-    return raw_message
+    return message
 
 async def send_telegram_message(message):
     try:
