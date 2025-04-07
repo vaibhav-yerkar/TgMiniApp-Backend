@@ -592,7 +592,7 @@ export const markTask: RequestHandler = async (req, res) => {
             verifyed = verifyed && verifyedReplies;
           } else if (entry === "QUOTE") {
             // Adding a 1-second delay before marking as verified
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await new Promise((resolve) => setTimeout(resolve, 2500));
             verifyed = verifyed && true;
 
             //!NOTE: currently due to api issue the Quote will be directly marked as done, if in future api issue is resolved uncomment the following code
