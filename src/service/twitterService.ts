@@ -442,7 +442,7 @@ export async function createTwitterTask(): Promise<void> {
     }
     const task = await prisma.tasks.create({
       data: {
-        title: `Twitter ${new Date().getHours()}:${new Date().getMinutes()}`,
+        title: "Twitter Announcement",
         cta: "complete",
         description: "like, comment, retweet, qrt",
         link: tweet.twitterUrl,

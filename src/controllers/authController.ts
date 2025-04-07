@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import admin from "firebase-admin";
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || "secret_token_for_jwt";
@@ -59,12 +60,6 @@ const safeReplacer = (_key: string, value: any) => {
 export const register: RequestHandler = async (req, res) => {
   try {
     const { username, telegramId } = req.body;
-    const inviteLinkBase = process.env.INVITE_LINK_BASE_URL;
-
-    if (!inviteLinkBase) {
-      res.status(500).json({ error: "Invite link base URL not configured" });
-      return;
-    }
 
     // Check if user already exists
     const existingUser = await prisma.users.findFirst({
@@ -83,8 +78,20 @@ export const register: RequestHandler = async (req, res) => {
         return;
       }
     }
+
+    // Create firebase Id
+    let firebaseId: string | null = null;
+    try {
+      const firebaseUser = await admin.auth().createUser({
+        displayName: username,
+      });
+      firebaseId = firebaseUser.uid;
+    } catch (error) {
+      console.error("Error creating Firebase user:", error);
+    }
+
     const user = await prisma.users.create({
-      data: { username, telegramId },
+      data: { username, telegramId, firebaseId },
     });
 
     const token = jwt.sign({ userId: user.id }, JWT_SECRET);
@@ -133,9 +140,9 @@ export const login: RequestHandler = async (req, res) => {
     }
 
     const now = new Date();
-    const shouldReset = user.lastResetDate
-      ? now.getTime() - user.lastResetDate.getTime() > 24 * 60 * 60 * 1000
-      : true;
+    const shouldReset =
+      !user.lastResetDate ||
+      now.getTime() - user.lastResetDate.getTime() > 24 * 60 * 60 * 1000;
 
     if (shouldReset) {
       const updatedUser = await prisma.users.update({

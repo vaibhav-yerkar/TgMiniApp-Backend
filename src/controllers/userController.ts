@@ -591,11 +591,16 @@ export const markTask: RequestHandler = async (req, res) => {
             );
             verifyed = verifyed && verifyedReplies;
           } else if (entry === "QUOTE") {
-            const verifyedQuotes = await verifyQuotes(
-              tweetId,
-              user.twitterUsername as string
-            );
-            verifyed = verifyed && verifyedQuotes;
+            // Adding a 1-second delay before marking as verified
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+            verifyed = verifyed && true;
+
+            //!NOTE: currently due to api issue the Quote will be directly marked as done, if in future api issue is resolved uncomment the following code
+            // const verifyedQuotes = await verifyQuotes(
+            //   tweetId,
+            //   user.twitterUsername as string
+            // );
+            // verifyed = verifyed && verifyedQuotes;
           }
         }
       } else if (task.platform === "TELEGRAM") {
