@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "build": "tsc",
     "dev": "ts-node-dev src/index.ts",
-    "migrate": "ts-node-dev src/config/migrateFirebase.ts"
+    "migrate-firebase": "ts-node-dev src/config/migrateFirebase.ts"
   },
   "keywords": [],
   "author": "",
