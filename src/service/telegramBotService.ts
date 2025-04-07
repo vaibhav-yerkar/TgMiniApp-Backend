@@ -9,7 +9,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   let TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME;
   const COMMUNITY_CHAT_ID = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
   const WEBHOOK_URL = process.env.WEBHOOK_URL;
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction = process.env.NODE_ENV !== "development";
   const TELEGRAM_MINI_APP = process.env.TELEGRAM_MINI_APP;
   const TELEGRAM_COMMUNITY_LINK = process.env.TELEGRAM_COMMUNITY_LINK;
 
