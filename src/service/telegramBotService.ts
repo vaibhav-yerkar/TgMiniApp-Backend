@@ -277,7 +277,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
         if (TELEGRAM_MINI_APP) {
           bot.sendMessage(
             chatId,
-            `Welcome ${escapeMarkdown(
+            `Hello ${escapeMarkdown(
               firstName
             )}!\n\nWelcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.\n\nAvailable Commands:\n
       \t/start - Open the Mini App\n
