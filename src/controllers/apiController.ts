@@ -153,14 +153,14 @@ export const testNotification: RequestHandler = async (req, res) => {
 
     const user = await prisma.users.findUnique({
       where: { id: userId },
-      select: { firebaseId: true },
+      select: { id: true },
     });
     if (!user) {
       res.status(404).json({ error: "User not found" });
       return;
     }
 
-    await sendNotification(user.firebaseId!, title, message);
+    await sendNotification(user.id, title, message);
 
     const notifications = await db
       .collection("notifications")
@@ -244,17 +244,17 @@ export const sendNotifications: RequestHandler = async (req, res) => {
       res.status(400).json({ error: "Missing or invalid inputs" });
       return;
     }
-    const firebasedIds = await prisma.users.findMany({
-      where: {
-        id: { in: userIds },
-      },
-      select: { firebaseId: true },
-    });
-    const firebaseIds = firebasedIds
-      .map((user) => user.firebaseId)
-      .filter((id): id is string => id !== null);
+    // const firebasedIds = await prisma.users.findMany({
+    //   where: {
+    //     id: { in: userIds },
+    //   },
+    //   select: { Id: true },
+    // });
+    // const firebaseIds = firebasedIds
+    // .map((user) => user.id)
+    // .filter((id): id is string => id !== null);
 
-    await sendBulkNotifications(firebaseIds, title, message);
+    await sendBulkNotifications(userIds, title, message);
     res.status(200).json({ message: "Bulk notifications sent successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });

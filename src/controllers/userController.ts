@@ -669,7 +669,7 @@ export const markTask: RequestHandler = async (req, res) => {
       const title = "Task Completed Successfully";
       const message =
         "Reward collected! Great job completing the task. Keep up the awesome work!";
-      await sendNotification(user.firebaseId!, title, message);
+      await sendNotification(user.id, title, message);
       return;
     }
 
@@ -718,7 +718,7 @@ export const markTask: RequestHandler = async (req, res) => {
 
     const title = "Task Marked for Review";
     const message = `Task "${task.title}" has been marked for review. We will notify you once it has been reviewed.`;
-    await sendNotification(user.firebaseId!, title, message);
+    await sendNotification(user.id, title, message);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " + `${error}` });
@@ -837,7 +837,7 @@ export const completeTask: RequestHandler = async (req, res) => {
     const title = "Task Reward Collected";
     const message =
       "Reward collected! Great job completing the task. Keep up the awesome work! ";
-    await sendNotification(user.firebaseId!, title, message);
+    await sendNotification(user.id, title, message);
     return;
   } catch (error) {
     res.status(500).json({ error: "Internal server error " });
@@ -958,11 +958,11 @@ export const updateTaskStatus: RequestHandler = async (req, res) => {
     if (status === "ADMIN_APPROVED") {
       const title = "Task has been verified by admin and ready to collect";
       const message = `Great news! Your task "${task.title}" has been verified. Collect your reward now and celebrate!`;
-      await sendNotification(user.firebaseId!, title, message);
+      await sendNotification(user.id, title, message);
     } else {
       const title = "Task has been rejected by admin";
       const message = `Sad news! Your task "${task.title}" has been rejected. Please try again and submit a valid task.`;
-      await sendNotification(user.firebaseId!, title, message);
+      await sendNotification(user.id, title, message);
     }
     return;
   } catch (error) {
@@ -1068,11 +1068,10 @@ export const resetTaskScore: RequestHandler = async (req, res) => {
         taskCompleted: [],
       },
     });
-    const users = await prisma.users.findMany({ select: { firebaseId: true } });
+    const users = await prisma.users.findMany({ select: { id: true } });
 
-    const userIds = users
-      .map((user) => user.firebaseId)
-      .filter((id): id is string => id !== null);
+    const userIds = users.map((user) => user.id);
+    // .filter((id): id is string => id !== null);
 
     const title = "Task Scores Reset";
     const message =
@@ -1161,7 +1160,7 @@ export const rewardInviter: RequestHandler = async (req, res) => {
         let title = "A new user has joined through your referral link";
         let message =
           "Woohoo! A friend just joined using your referral link. Keep spreading the word and earn more rewards!";
-        await sendNotification(inviter.firebaseId!, title, message);
+        await sendNotification(inviter.id, title, message);
 
         if (inviter.Invitees.length === 5) {
           title = "Referral milestones: 5 friends joined!";
@@ -1187,7 +1186,7 @@ export const rewardInviter: RequestHandler = async (req, res) => {
           message = "";
         }
         if (title.length > 0 && message.length > 0) {
-          await sendNotification(inviter.firebaseId!, title, message);
+          await sendNotification(inviter.id, title, message);
         }
 
         res.json(

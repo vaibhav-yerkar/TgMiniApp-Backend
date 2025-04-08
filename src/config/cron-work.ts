@@ -25,11 +25,10 @@ export const resetDailyTasks = async () => {
 export const sendReminderNotifications = async () => {
   try {
     const users = await prisma.users.findMany({
-      select: { firebaseId: true },
+      select: { id: true },
     });
-    const userIds = users
-      .map((user) => user.firebaseId)
-      .filter((id): id is string => id !== null);
+    const userIds = users.map((user) => user.id);
+    // .filter((id): id is string => id !== null);
 
     const title = "Daily Task Reset Reminder.";
     const message =
