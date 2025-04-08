@@ -25,9 +25,11 @@ export const resetDailyTasks = async () => {
 export const sendReminderNotifications = async () => {
   try {
     const users = await prisma.users.findMany({
-      select: { id: true },
+      select: { firebaseId: true },
     });
-    const userIds = users.map((user) => user.id);
+    const userIds = users
+      .map((user) => user.firebaseId)
+      .filter((id): id is string => id !== null);
 
     const title = "Daily Task Reset Reminder.";
     const message =
@@ -64,7 +66,7 @@ cron.schedule(
     console.log("Resetting daily tasks");
     await resetDailyTasks();
   },
-  { timezone: "Asia/Kolkata" },
+  { timezone: "Asia/Kolkata" }
 );
 
 cron.schedule(
@@ -73,5 +75,5 @@ cron.schedule(
     console.log("Sending reminder notifications");
     await sendReminderNotifications();
   },
-  { timezone: "Asia/Kolkata" },
+  { timezone: "Asia/Kolkata" }
 );

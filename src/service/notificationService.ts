@@ -2,7 +2,7 @@ import { db } from "../config/firebase";
 import admin from "firebase-admin";
 
 interface Notification {
-  userId: number;
+  userId: string;
   title: string;
   message: string;
   createdAt: FirebaseFirestore.Timestamp;
@@ -10,7 +10,7 @@ interface Notification {
 }
 
 export async function sendNotification(
-  userId: number,
+  userId: string,
   title: string,
   message: string
 ) {
@@ -31,7 +31,7 @@ export async function sendNotification(
 }
 
 export async function sendBulkNotifications(
-  userIds: number[],
+  userIds: string[],
   title: string,
   message: string
 ) {

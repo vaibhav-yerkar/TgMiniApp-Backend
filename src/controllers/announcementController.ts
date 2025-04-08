@@ -141,8 +141,10 @@ export const createAnnouncement: RequestHandler = async (req, res) => {
       data: { title, description, image, anmtTasks: anmtTasks || [] },
     });
 
-    const users = await prisma.users.findMany({ select: { id: true } });
-    const userIds = users.map((user) => user.id);
+    const users = await prisma.users.findMany({ select: { firebaseId: true } });
+    const userIds = users
+      .map((user) => user.firebaseId)
+      .filter((id): id is string => id !== null);
     const notificationTitle = "New Announcement!";
     const message = "Check out the new announcement!";
     await sendBulkNotifications(userIds, notificationTitle, message);

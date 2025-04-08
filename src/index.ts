@@ -12,6 +12,7 @@ import {
 } from "./config/cron-work";
 
 // import { verifyQuotes } from "./service/twitterService";
+import { sendNotification } from "./service/notificationService";
 
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
@@ -64,11 +65,11 @@ initlialiseTelegramBot(app).catch((err) => {
 
 initializeTwitterTaskScheduler();
 
-// const func = async () => {
-//   const result = await verifyQuotes("1905060156926205961", "assme_44");
-//   console.log(result);
-// };
-// func();
+sendNotification(
+  "8uBVxEWvw1PyyZTGmaK89hJJ3iT2",
+  "test",
+  "this is a test notification"
+);
 
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);
