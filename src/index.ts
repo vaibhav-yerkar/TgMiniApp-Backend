@@ -65,12 +65,6 @@ initlialiseTelegramBot(app).catch((err) => {
 
 initializeTwitterTaskScheduler();
 
-sendNotification(
-  "8uBVxEWvw1PyyZTGmaK89hJJ3iT2",
-  "test",
-  "this is a test notification"
-);
-
 app.listen(port, () => {
   console.log(`Server is running at ${port}`);
 });
