@@ -279,13 +279,18 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             chatId,
             `Welcome ${escapeMarkdown(
               firstName
-            )}!\n\n Let's get you started with ZO App.`,
+            )}!\n\nWelcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.\n\nAvailable Commands:\n
+      \t/start - Open the Mini App\n
+      \t/leaderboard - View the current leaderboard\n
+      \t/tasks - See recent tasks and updates\n
+      \t/invite - Invite your friends to earn rewards
+            \n\n Let's get you started with Zo App.`,
             {
               reply_markup: {
                 inline_keyboard: [
                   [
                     {
-                      text: "🚀 Open Zo App",
+                      text: "🚀 Open The Zo App",
                       web_app: { url: TELEGRAM_MINI_APP },
                     },
                   ],
