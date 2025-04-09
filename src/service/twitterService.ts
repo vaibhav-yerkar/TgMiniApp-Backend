@@ -1,3 +1,4 @@
+import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import { spawn } from "child_process";
@@ -64,7 +65,7 @@ export async function verifyReplies(
       cursor = data.next_cursor;
     }
   } catch (error) {
-    console.error("Error in verifyReplies:", error);
+    console.error("Error in verifyReplies");
     return false;
   }
   return verified;
@@ -115,7 +116,7 @@ export async function verifyRetweeters(
       cursor = data.next_cursor;
     }
   } catch (error) {
-    console.error("Error in verifyRetweeters:", error);
+    console.error("Error in verifyRetweeters");
     return false;
   }
   return verified;
@@ -170,7 +171,7 @@ export async function verifyQuotes(
       cursor = data.next_cursor;
     }
   } catch (error) {
-    console.error("Error in verifyQuotes:", error);
+    console.error("Error in verifyQuotes");
     return false;
   }
   return verified;
@@ -240,7 +241,7 @@ export async function fetchFollowings(
       cursor = data.next_cursor;
     }
   } catch (error) {
-    console.error("Error in fetchFollowers:", error);
+    console.error("Error in fetchFollowers");
     return flag ? false : [];
   }
   return flag ? false : following;
@@ -267,17 +268,23 @@ export async function fetchFollowers(
         url = `${url}&cursor=${cursor}`;
       }
 
-      const response = await axios.get(url, {
-        ...options,
-        responseType: "text",
-        transformResponse: [
-          (data: string) => {
-            return JSONbig({ storeAsString: true }).parse(data);
-          },
-        ],
-      });
+      let response;
+      try {
+        response = await axios.get(url, {
+          ...options,
+          responseType: "text",
+          transformResponse: [
+            (data: string) => {
+              return JSONbig({ storeAsString: true }).parse(data);
+            },
+          ],
+        });
+      } catch (err) {
+        console.error("Error in fetchFollowers:", err);
+        return [];
+      }
 
-      const data = response.data;
+      const data = response!.data;
 
       if (Array.isArray(data.followers)) {
         const newFollower = data.followers.map((followers: any) => {
@@ -294,7 +301,7 @@ export async function fetchFollowers(
       cursor = data.next_cursor;
     }
   } catch (error) {
-    console.error("Error in fetchFollowers:", error);
+    console.error("Error in fetchFollowers");
     return [];
   }
   return followers;
@@ -345,7 +352,7 @@ export async function getTwitterInfo(
     };
     return userInfo;
   } catch (error) {
-    console.error("Error Occured :", error);
+    console.error("Error Fetching Twitter Info");
     return { id: "0", name: "" };
   }
 }
@@ -376,7 +383,7 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
     }
     return null;
   } catch (err) {
-    console.error("Error in fetchLatestTweet:", err);
+    console.error("Error in fetchLatestTweet");
     return null;
   }
 }
@@ -387,6 +394,7 @@ async function fetchLatestTweet(username: string): Promise<any | null> {
  */
 async function runPythonScript(jsonStr: string) {
   // Build an absolute path using __dirname
+  console.log(jsonStr);
   const scriptPath = path.join(__dirname, "notification.py");
   const pythonProcess = spawn("python3", [scriptPath, jsonStr]);
 
