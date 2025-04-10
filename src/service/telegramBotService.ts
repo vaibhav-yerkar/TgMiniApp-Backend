@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+let botInstance: TelegramBot | null = null;
+
 export const initlialiseTelegramBot = async (app?: express.Express) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   let TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME;
@@ -154,7 +156,141 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
   };
 
+  const createInviteLink = async (
+    telegramId: bigint,
+    username: string
+  ): Promise<string | null> => {
+    try {
+      const result = await bot.createChatInviteLink(COMMUNITY_CHAT_ID, {
+        name: `${telegramId.toString()}`,
+        member_limit: 0,
+        creates_join_request: true,
+      });
+      if (result.invite_link) {
+        await prisma.inviteTrack.upsert({
+          where: { telegramId },
+          update: { InviteLink: result.invite_link },
+          create: {
+            telegramId,
+            username: username,
+            InviteLink: result.invite_link,
+          },
+        });
+        return result.invite_link;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error in creating invite link:", error);
+      return null;
+    }
+  };
+
+  const processSuccessfulInvite = async (
+    inviterId: bigint,
+    newUserId: bigint,
+    username: string
+  ) => {
+    try {
+      let inviter = await prisma.inviteTrack.findUnique({
+        where: { telegramId: inviterId },
+      });
+      if (!inviter) {
+        console.log("Inviter not found in the database");
+      }
+      if (!inviter?.Invites.includes(newUserId)) {
+        await prisma.inviteTrack.update({
+          where: { telegramId: inviterId },
+          data: {
+            Invites: [...inviter!.Invites, newUserId],
+          },
+        });
+      }
+      const newUser = await prisma.inviteTrack.create({
+        data: {
+          telegramId: newUserId,
+          username,
+        },
+      });
+      const user = await prisma.users.findUnique({
+        where: { telegramId: inviterId },
+      });
+      if (user) {
+        await prisma.users.update({
+          where: { telegramId: inviterId },
+          data: {
+            totalScore: {
+              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+            },
+            inviteScore: {
+              increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+            },
+            Invitees: { push: newUserId },
+          },
+        });
+        bot
+          .sendMessage(
+            inviterId.toString(),
+            `🎉 Congratulations! Someone joined using your invite link. You've earned ${process.env.INVITE_REWARD_AMOUNT} points!`
+          )
+          .catch((err) => console.error("Failed to send notification:", err));
+      }
+    } catch (err) {
+      console.log("Error in processing successful invite:", err);
+    }
+  };
+
   // ------------------------------------------------------------
+  // EVENT HANDLERS
+  // ------------------------------------------------------------
+
+  bot.on("chat_join_request", async (chatJoinRequest) => {
+    if (chatJoinRequest.chat.id.toString() !== COMMUNITY_CHAT_ID) return;
+
+    try {
+      const userId = chatJoinRequest.from.id;
+      const username =
+        chatJoinRequest.from.username ||
+        chatJoinRequest.from.first_name ||
+        "Unknown";
+
+      const inviteLink = chatJoinRequest.invite_link;
+      if (inviteLink && inviteLink.name) {
+        const inviterId = BigInt(inviteLink.name);
+        await processSuccessfulInvite(inviterId, BigInt(userId), username);
+      }
+
+      bot.approveChatJoinRequest(COMMUNITY_CHAT_ID, userId);
+    } catch (err) {
+      console.error("Error in processing chat_join_request:", err);
+    }
+  });
+
+  bot.on("chat_member", async (chatMember) => {
+    try {
+      if (chatMember.chat.id.toString() !== COMMUNITY_CHAT_ID) return;
+      if (
+        chatMember.new_chat_member.status === "member" &&
+        ["left", "kicked"].includes(chatMember.old_chat_member.status)
+      ) {
+        const userId = chatMember.new_chat_member.user.id;
+        const username =
+          chatMember.new_chat_member.user.username ||
+          chatMember.new_chat_member.user.first_name ||
+          "Unknown";
+
+        try {
+          if (chatMember.invite_link?.name) {
+            const inviterId = BigInt(chatMember.invite_link.name);
+            await processSuccessfulInvite(inviterId, BigInt(userId), username);
+          }
+        } catch (err) {
+          console.error("Error in processing invite link:", err);
+        }
+      }
+    } catch (err) {
+      console.log("Error in chat_member event:", err);
+    }
+  });
 
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -162,78 +298,6 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const userId = msg.from?.id;
     const username = msg.from?.username || "there";
     const firstName = msg.from?.first_name || username;
-    // ------------------------------------------------------------
-    if (msg.new_chat_members && chatId.toString() === COMMUNITY_CHAT_ID) {
-      const chatInviteLink = (msg as any).invite_link?.invite_link;
-      if (chatInviteLink && chatInviteLink.includes(TELEGRAM_COMMUNITY_LINK)) {
-        const inviterIdMatch = chatInviteLink.match(
-          new RegExp(`${TELEGRAM_COMMUNITY_LINK}?invite=(\\d+)`)
-        );
-        if (inviterIdMatch && inviterIdMatch[1]) {
-          const inviterId = BigInt(inviterIdMatch[1]);
-          try {
-            const inviter = await prisma.inviteTrack.findUnique({
-              where: { telegramId: inviterId },
-            });
-
-            for (const newMember of msg.new_chat_members) {
-              const newMemberId = BigInt(newMember.id);
-              const newMemberUsername =
-                newMember.username || newMember.first_name || "Unknown";
-
-              const existingUser = await prisma.inviteTrack.findUnique({
-                where: { telegramId: newMemberId },
-              });
-              if (!existingUser) {
-                await prisma.inviteTrack.create({
-                  data: {
-                    telegramId: newMemberId,
-                    username: newMemberUsername,
-                    Invites: [],
-                  },
-                });
-              }
-              if (inviter) {
-                const updateInvites = inviter.Invites.includes(newMemberId)
-                  ? inviter.Invites
-                  : [...inviter.Invites, newMemberId];
-                await prisma.inviteTrack.update({
-                  where: { telegramId: inviterId },
-                  data: {
-                    Invites: updateInvites,
-                  },
-                });
-              }
-              const user = await prisma.users.findUnique({
-                where: { telegramId: inviterId },
-              });
-              if (user) {
-                await prisma.users.update({
-                  where: { telegramId: inviterId },
-                  data: {
-                    totalScore: {
-                      increment: parseInt(
-                        process.env.INVITE_REWARD_AMOUNT as string
-                      ),
-                    },
-                    inviteScore: {
-                      increment: parseInt(
-                        process.env.INVITE_REWARD_AMOUNT as string
-                      ),
-                    },
-                    Invitees: { push: newMemberId },
-                  },
-                });
-              }
-            }
-          } catch (err) {
-            console.log("Error in updating invite track:", err);
-          }
-        }
-      }
-    }
-
-    // ------------------------------------------------------------
     const text = msg.text || "";
 
     if (msg.chat.type !== "private") return;
@@ -253,7 +317,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
               },
             });
           }
-          const inviteLink = TELEGRAM_COMMUNITY_LINK + `?invite=${telegramId}`;
+          const inviteLink = await createInviteLink(telegramId, user.username);
           bot.sendMessage(
             chatId,
             `Your invite link is :\n ${inviteLink}\n\n Share this link to invite others to our community and start earning rewards!`
@@ -274,6 +338,17 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
     if (text === "/start") {
       try {
+        const user = await prisma.inviteTrack.findFirst({
+          where: { telegramId: BigInt(userId!.toString()) },
+        });
+        if (!user) {
+          await prisma.inviteTrack.create({
+            data: {
+              telegramId: BigInt(userId!.toString()),
+              username: firstName,
+            },
+          });
+        }
         if (TELEGRAM_MINI_APP) {
           bot.sendMessage(
             chatId,
@@ -340,5 +415,33 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     bot.sendMessage(chatId, commandsList);
   });
 
+  botInstance = bot;
   return bot;
+};
+
+/**
+ * Send a message to a specific chat ID
+ * @param chatId The Telegram chat ID to send the message to
+ * @param message The message text to send
+ * @param options Optional send message options (parse_mode, reply_markup, etc.)
+ * @returns The sent message or undefined if there was an error
+ */
+export const sendMessageToChat = async (
+  chatId: number | string,
+  message: string,
+  options?: TelegramBot.SendMessageOptions
+): Promise<TelegramBot.Message | undefined> => {
+  if (!botInstance) {
+    console.error(
+      "Bot instance not initialized. Call initlialiseTelegramBot first."
+    );
+    return undefined;
+  }
+
+  try {
+    return await botInstance.sendMessage(chatId, message, options);
+  } catch (error) {
+    console.error(`Error sending message to chat ${chatId}:`, error);
+    return undefined;
+  }
 };

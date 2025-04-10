@@ -4,6 +4,7 @@ import axios from "axios";
 import { spawn } from "child_process";
 import path from "path";
 import JSONbig from "json-bigint";
+import { sendMessageToChat } from "./telegramBotService";
 
 const prisma = new PrismaClient();
 
@@ -462,6 +463,22 @@ export async function createTwitterTask(): Promise<void> {
         platform: "TWITTER",
       },
     });
+    sendMessageToChat(
+      process.env.TELEGRAM_ANNOUNCEMENT_CHAT_ID!,
+      `New Twitter Task Created: ${tweet.text}`,
+      {
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: "🚀 Open The Zo App",
+                web_app: { url: process.env.TELEGRAM_MINI_APP! },
+              },
+            ],
+          ],
+        },
+      }
+    );
     console.log("Twitter task created", task);
   } catch (error) {
     console.error("Error in createTwitterTask:", error);
