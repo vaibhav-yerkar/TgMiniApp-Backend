@@ -1,4 +1,4 @@
-import express, { Express, Request, Response, NextFunction } from "express";
+import express, { Express, Request, Response } from "express";
 import cors from "cors";
 import cron from "node-cron";
 import dotenv from "dotenv";
@@ -9,10 +9,8 @@ import {
   resetDailyTasks,
   sendReminderNotifications,
   initializeTwitterTaskScheduler,
+  removeExpiredTelegramTasks,
 } from "./config/cron-work";
-
-// import { verifyQuotes } from "./service/twitterService";
-import { sendNotification } from "./service/notificationService";
 
 import adminRouter from "./router/adminRouter";
 import taskRouter from "./router/taskRouter";
@@ -24,9 +22,11 @@ import announcemetRouter from "./router/announcementRouter";
 console.log("Initailizing cron job");
 cron.schedule(
   "0 0 * * *",
-  () => {
-    console.log("Running cron job");
-    resetDailyTasks();
+  async () => {
+    console.log("Resetting daily tasks");
+    await resetDailyTasks();
+    console.log("Removing expired telegram tasks");
+    await removeExpiredTelegramTasks();
   },
   { timezone: "Asia/Kolkata" }
 );

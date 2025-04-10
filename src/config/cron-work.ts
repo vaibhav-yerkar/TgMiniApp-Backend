@@ -40,13 +40,32 @@ export const sendReminderNotifications = async () => {
   }
 };
 
+export const removeExpiredTelegramTasks = async () => {
+  try {
+    const sixDayAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
+    const expiredTasks = await prisma.tasks.deleteMany({
+      where: {
+        type: "DAILY",
+        createdAt: {
+          lt: sixDayAgo,
+        },
+      },
+    });
+    console.log(
+      `Removed ${expiredTasks.count} expired tasks older than 6 days`
+    );
+  } catch (error) {
+    console.log("Error removing expired telegram tasks: ", error);
+  }
+};
+
 /**
  * Initializes cron jobs:
  * - Every 20 min, fetch the latest tweet from "joinzo" and create a Twitter task.
  * - Every 20 min, remove Twitter tasks older than 24 hours.
  */
 export function initializeTwitterTaskScheduler(): void {
-  cron.schedule("*/1 * * * *", async () => {
+  cron.schedule("*/20 * * * *", async () => {
     console.log("[Cron] Creating Twitter task");
     await createTwitterTask();
   });
@@ -59,20 +78,20 @@ export function initializeTwitterTaskScheduler(): void {
   console.log("Twitter Task Scheduler initialized.");
 }
 
-cron.schedule(
-  "0 0 * * *",
-  async () => {
-    console.log("Resetting daily tasks");
-    await resetDailyTasks();
-  },
-  { timezone: "Asia/Kolkata" }
-);
+// cron.schedule(
+//   "0 0 * * *",
+//   async () => {
+//     console.log("Resetting daily tasks");
+//     await resetDailyTasks();
+//   },
+//   { timezone: "Asia/Kolkata" }
+// );
 
-cron.schedule(
-  "0 18 * * *",
-  async () => {
-    console.log("Sending reminder notifications");
-    await sendReminderNotifications();
-  },
-  { timezone: "Asia/Kolkata" }
-);
+// cron.schedule(
+//   "0 18 * * *",
+//   async () => {
+//     console.log("Sending reminder notifications");
+//     await sendReminderNotifications();
+//   },
+//   { timezone: "Asia/Kolkata" }
+// );

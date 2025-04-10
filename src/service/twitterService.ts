@@ -1,4 +1,3 @@
-import { Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import axios from "axios";
 import { spawn } from "child_process";

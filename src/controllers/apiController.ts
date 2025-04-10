@@ -1,4 +1,3 @@
-import { InviteTrack } from "./../../node_modules/.prisma/client/index.d";
 import { RequestHandler } from "express";
 import { PrismaClient } from "@prisma/client";
 import {

@@ -6,7 +6,7 @@ import {
   updateAnnouncement,
   deleteAnnouncement,
 } from "../controllers/announcementController";
-import { auth } from "../middleware/auth";
+
 import { adminAuth } from "../middleware/admin";
 import { authOrAdmin } from "../middleware/authOrAdmin";
 
