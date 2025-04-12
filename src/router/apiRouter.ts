@@ -8,6 +8,7 @@ import {
   getMemberList,
   sendMessageAll,
   sendMessage,
+  EditBotResponse,
 } from "../controllers/apiController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -20,6 +21,7 @@ router.get("/bot/members", adminAuth, getMemberList);
 
 router.post("/test-notification", auth, testNotification);
 router.post("/send-notification", adminAuth, sendNotifications);
+router.post("/bot/edit-response", adminAuth, EditBotResponse);
 router.post("/bot/send-message", adminAuth, sendMessage);
 router.post("/bot/send-message-all", adminAuth, sendMessageAll);
 

@@ -1,0 +1,5 @@
+{
+  "start": {
+    "message": "Welcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.\n\nAvailable Commands:\n\t/start - Open the Mini App\n\t/leaderboard - View the current leaderboard\n\t/tasks - See recent tasks and updates\n\t/invite - Invite your friends to earn rewards"
+  }
+}

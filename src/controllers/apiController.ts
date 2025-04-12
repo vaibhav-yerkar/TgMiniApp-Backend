@@ -7,6 +7,8 @@ import {
 } from "../service/notificationService";
 import { db } from "../config/firebase";
 import { sendMessageToChat } from "../service/telegramBotService";
+import fs from "fs";
+import path from "path";
 
 declare global {
   namespace Express {
@@ -440,6 +442,77 @@ export const sendMessageAll: RequestHandler = async (req, res) => {
       message: "Message sent to all users successfully",
     });
     return;
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+/**
+ * @swagger
+ * /api/bot/edit-response:
+ *   post:
+ *     summary: Edit Bot response message
+ *     tags: [Bot]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - message
+ *             properties:
+ *               message:
+ *                 type: string
+ *                 description: Bot response message
+ *     responses:
+ *       200:
+ *         description: message sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: message edited succesfully
+ *       400:
+ *         description: Bad request - missing or invalid inputs
+ *       500:
+ *         description: Internal server error
+ */
+export const EditBotResponse: RequestHandler = async (req, res) => {
+  try {
+    const { message } = req.body;
+    if (!message) {
+      res.status(400).json({ error: "Message is required" });
+      return;
+    }
+
+    const filePath = path.join(__dirname, "../bot_response.json");
+
+    let botResponse;
+    try {
+      const fileContent = fs.readFileSync(filePath, "utf8");
+      botResponse = JSON.parse(fileContent);
+    } catch (error) {
+      console.error("Error reading bot_response.json", error);
+      res.status(500).json("Failed to read bot response file");
+      return;
+    }
+    botResponse.start.message = message;
+    try {
+      fs.writeFileSync(filePath, JSON.stringify(botResponse, null, 2), "utf8");
+      console.log("Bot response file updated successfully");
+    } catch (error) {
+      console.error("Error writing to bot_response.json", error);
+      res.status(500).json({ error: "Failed to ypdate bot response file" });
+      return;
+    }
+    res.status(200).json({ message: "Bot response updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
     return;
