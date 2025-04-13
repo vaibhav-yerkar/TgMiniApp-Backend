@@ -302,6 +302,35 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       console.log("Error in chat_member event:", err);
     }
   });
+  // ------------------------------------------------------------
+  // MESSAGE HANDLER
+
+  const inviteHandler = async (userId: bigint, username: string) => {
+    if (!userId) {
+      return "Sorry, I couldn't identify you.";
+    }
+    try {
+      const telegramId = BigInt(userId);
+      let user = await prisma.inviteTrack.findUnique({
+        where: { telegramId: userId },
+      });
+      if (!user) {
+        user = await prisma.inviteTrack.create({
+          data: {
+            telegramId,
+            username,
+            Invites: [],
+          },
+        });
+      }
+      const inviteLink = await createInviteLink(userId, user.username);
+      return `Your invite link is :\n ${inviteLink}\n\n Share this link to invite others to our community and start earning rewards!`;
+    } catch (err) {
+      console.log("Error in generating invite link:", err);
+      return "Sorry, I couldn't generate your invite link.";
+    }
+  };
+  // ------------------------------------------------------------
 
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
@@ -313,39 +342,17 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     if (msg.chat.type !== "private") return;
 
+    // Command : /invite
+
     if (text === "/invite") {
       if (userId) {
-        try {
-          const telegramId = BigInt(userId);
-          let user = await prisma.inviteTrack.findUnique({
-            where: { telegramId },
-          });
-          if (!user) {
-            user = await prisma.inviteTrack.create({
-              data: {
-                telegramId,
-                username,
-                Invites: [],
-              },
-            });
-          }
-          const inviteLink = await createInviteLink(telegramId, user.username);
-          bot.sendMessage(
-            chatId,
-            `Your invite link is :\n ${inviteLink}\n\n Share this link to invite others to our community and start earning rewards!`
-          );
-          return;
-        } catch (err) {
-          console.log("Error in generating invite link:", err);
-          bot.sendMessage(
-            chatId,
-            "Sorry, I couldn't generate your invite link."
-          );
-          return;
-        }
+        const response = await inviteHandler(
+          BigInt(userId!.toString()),
+          firstName
+        );
+        bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
       } else {
         bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
-        return;
       }
     }
     if (text === "/start") {
@@ -435,6 +442,41 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     bot.sendMessage(chatId, commandsList);
   });
 
+  // ------------------------------------------------------------
+  // Callback Query Handler
+
+  bot.on("callback_query", async (callbackQuery) => {
+    if (!callbackQuery.message || !callbackQuery.from) return;
+
+    const chatId = callbackQuery.message.chat.id;
+    const callbackCommand = callbackQuery.data;
+
+    console.log(`Received callback query with data: ${callbackCommand}`);
+
+    const simulatedMsg: TelegramBot.Message = {
+      message_id: callbackQuery.message.message_id,
+      from: callbackQuery.from,
+      chat: callbackQuery.message.chat,
+      date: Math.floor(Date.now() / 1000),
+      text: callbackCommand,
+    };
+
+    try {
+      await bot.processUpdate({
+        update_id: 0,
+        message: simulatedMsg,
+      });
+
+      await bot.answerCallbackQuery(callbackQuery.id);
+    } catch (error) {
+      console.error("Error processing callback query:", error);
+      bot.sendMessage(chatId, "Sorry, I couldn't process your request.");
+      bot.answerCallbackQuery(callbackQuery.id, {
+        text: "Error processing request",
+      });
+    }
+  });
+  // ------------------------------------------------------------
   botInstance = bot;
   return bot;
 };
