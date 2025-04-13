@@ -351,8 +351,10 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
           firstName
         );
         bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
+        return;
       } else {
         bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+        return;
       }
     }
     if (text === "/start") {
