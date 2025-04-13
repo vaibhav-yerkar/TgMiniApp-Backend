@@ -312,6 +312,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const text = msg.text || "";
 
     if (msg.chat.type !== "private") return;
+
     if (text === "/invite") {
       if (userId) {
         try {
@@ -364,7 +365,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
           bot.sendMessage(
             chatId,
             `Hello ${escapeMarkdown(firstName)}!\n\n ${botMessage.start.message}
-            \n\n Let's get you started with Zo App.`,
+            \n\n Let's get you started with Zo .`,
             {
               reply_markup: {
                 inline_keyboard: [
@@ -372,6 +373,20 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                     {
                       text: "🚀 Open The Zo App",
                       web_app: { url: TELEGRAM_MINI_APP },
+                    },
+                    {
+                      text: "🏆 View Leaderboard",
+                      callback_data: "/leaderboard",
+                    },
+                  ],
+                  [
+                    {
+                      text: "📋 Recent Tasks",
+                      callback_data: "/tasks",
+                    },
+                    {
+                      text: "🔗 Invite Friends",
+                      callback_data: "/invite",
                     },
                   ],
                 ],
