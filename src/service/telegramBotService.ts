@@ -385,17 +385,17 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                     },
                     {
                       text: "🏆 View Leaderboard",
-                      callback_data: "/leaderboard",
+                      callback_data: "cmd_leaderboard",
                     },
                   ],
                   [
                     {
                       text: "📋 Recent Tasks",
-                      callback_data: "/tasks",
+                      callback_data: "cmd_tasks",
                     },
                     {
                       text: "🔗 Invite Friends",
-                      callback_data: "/invite",
+                      callback_data: "cmd_invite",
                     },
                   ],
                 ],
@@ -452,29 +452,39 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     const chatId = callbackQuery.message.chat.id;
     const callbackCommand = callbackQuery.data;
+    const userFrom = callbackQuery.message.from;
+    const userId = callbackQuery.message.from?.id;
+    const username = callbackQuery.message.from?.username || "there";
+    const firstName = callbackQuery.message.from?.first_name || username;
 
-    const simulatedMsg: TelegramBot.Message = {
-      message_id: callbackQuery.message.message_id,
-      from: callbackQuery.from,
-      chat: callbackQuery.message.chat,
-      date: Math.floor(Date.now() / 1000),
-      text: callbackCommand,
-    };
+    switch (callbackCommand) {
+      case "cmd_leaderboard":
+        if (userId) {
+          const leaderboardText = await formatLeaderBoard(userId);
+          bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
+        } else {
+          bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+        }
+        break;
 
-    try {
-      await bot.processUpdate({
-        update_id: 0,
-        message: simulatedMsg,
-      });
+      case "cmd_tasks":
+        const tasksText = await getRecentTasks();
+        bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
+        break;
 
-      await bot.answerCallbackQuery(callbackQuery.id);
-    } catch (error) {
-      console.error("Error processing callback query:", error);
-      bot.sendMessage(chatId, "Sorry, I couldn't process your request.");
-      bot.answerCallbackQuery(callbackQuery.id, {
-        text: "Error processing request",
-      });
+      case "cmd_invite":
+        if (userId) {
+          const response = await inviteHandler(
+            BigInt(userId!.toString()),
+            firstName
+          );
+          bot.sendMessage(chatId, response, { parse_mode: "Markdown" });
+        } else {
+          bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
+        }
+        break;
     }
+    bot.answerCallbackQuery(callbackQuery.id);
   });
   // ------------------------------------------------------------
   botInstance = bot;
