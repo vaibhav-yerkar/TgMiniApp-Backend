@@ -453,8 +453,6 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const chatId = callbackQuery.message.chat.id;
     const callbackCommand = callbackQuery.data;
 
-    console.log(`Received callback query with data: ${callbackCommand}`);
-
     const simulatedMsg: TelegramBot.Message = {
       message_id: callbackQuery.message.message_id,
       from: callbackQuery.from,
