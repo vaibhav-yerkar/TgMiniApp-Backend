@@ -459,8 +459,8 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     switch (callbackCommand) {
       case "cmd_leaderboard":
-        if (userId) {
-          const leaderboardText = await formatLeaderBoard(userId);
+        if (chatId) {
+          const leaderboardText = await formatLeaderBoard(chatId);
           bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
         } else {
           bot.sendMessage(chatId, "Sorry, I couldn't identify you.");
