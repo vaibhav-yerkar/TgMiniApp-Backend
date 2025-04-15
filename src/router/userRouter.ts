@@ -18,6 +18,8 @@ import {
   updateTwitterInvitee,
   updateTwitterInfo,
   deleteUser,
+  getUserInviteProfile,
+  fetchUserInviteProfile,
 } from "../controllers/userController";
 import { auth } from "../middleware/auth";
 import { adminAuth } from "../middleware/admin";
@@ -25,7 +27,9 @@ import { adminAuth } from "../middleware/admin";
 const router = express.Router();
 
 router.get("/fetch-profile/:userId", adminAuth, fetchUserProfile);
+router.get("/invite-profile/:telegramId", adminAuth, fetchUserInviteProfile);
 router.get("/profile", auth, getUserProfile);
+router.get("/invite-profile", auth, getUserInviteProfile);
 router.get("/username/:telegramId", auth, getUsername);
 router.get("/leaderboard", auth, getLeaderboard);
 router.get("/overall-leaderboard", auth, getOverallLeaderboard);

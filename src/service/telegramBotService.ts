@@ -235,7 +235,6 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             inviteScore: {
               increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
             },
-            Invitees: { push: newUserId },
           },
         });
         bot
@@ -363,12 +362,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
           where: { telegramId: BigInt(userId!.toString()) },
         });
         if (!user) {
-          await prisma.inviteTrack.create({
-            data: {
-              telegramId: BigInt(userId!.toString()),
-              username: firstName,
-            },
-          });
+          await createInviteLink(BigInt(userId!.toString()), username);
         }
         if (TELEGRAM_MINI_APP) {
           bot.sendMessage(

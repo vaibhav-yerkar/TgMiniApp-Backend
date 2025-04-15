@@ -33,6 +33,25 @@ const safeReplacer = (_key: string, value: any) => {
  * @swagger
  * components:
  *   schemas:
+ *     InviteProfile:
+ *       type: object
+ *       required:
+ *        - telegramId
+ *        - username
+ *       properties:
+ *         id:
+ *           type: integer
+ *         telegramId:
+ *           type: integer
+ *         username:
+ *           type: string
+ *         InviteLink:
+ *           type: string
+ *         Invites:
+ *           type: array
+ *           items:
+ *             type: integer
+ *
  *     TaskComplete:
  *       type: object
  *       required:
@@ -177,6 +196,51 @@ export const getUserProfile: RequestHandler = async (req, res) => {
     return;
   }
 };
+/**
+ * @swagger
+ * /user/invite-profile:
+ *   get:
+ *     summary: Get User's Tg invite profile
+ *     tags: [User - User]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InviteProfile'
+ *               type: array
+ */
+export const getUserInviteProfile: RequestHandler = async (req, res) => {
+  try {
+    const userId = parseInt(req.userId! as string);
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { telegramId: true },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    const inviteProfile = await prisma.inviteTrack.findUnique({
+      where: { telegramId: user?.telegramId },
+    });
+
+    if (!inviteProfile) {
+      res.status(404).json({ error: "Invite profile not found" });
+      return;
+    }
+
+    res.json(JSON.parse(JSON.stringify(inviteProfile, safeReplacer)));
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
 
 /**
  * @swagger
@@ -225,6 +289,48 @@ export const fetchUserProfile: RequestHandler = async (req, res) => {
 
 /**
  * @swagger
+ * /user/invite-profile/{telegramId}:
+ *   get:
+ *     summary: Get User's invite profile Admin
+ *     tags: [User - Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: telegramId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: user ID of the user to get user profile
+ *     responses:
+ *       200:
+ *         description: User profile data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/InviteProfile'
+ *               type: array
+ */
+export const fetchUserInviteProfile: RequestHandler = async (req, res) => {
+  try {
+    const telegramId = BigInt(req.params.telegramId! as string);
+    const user = await prisma.inviteTrack.findUnique({
+      where: { telegramId },
+    });
+
+    if (!user) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+    res.json(JSON.parse(JSON.stringify(user, safeReplacer)));
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+    return;
+  }
+};
+
+/**
+ * @swagger
  * /user/username/{telegramId}:
  *   get:
  *     summary: Get Username by telegram ID
@@ -254,14 +360,7 @@ export const getUsername: RequestHandler = async (req, res) => {
       where: { telegramId: telegramId },
     });
     if (!existingUser) {
-      const invitedUser = await prisma.inviteTrack.findUnique({
-        where: { telegramId: telegramId },
-      });
-      if (!invitedUser) {
-        res.json({ error: "User not found" });
-        return;
-      }
-      res.json(invitedUser.username);
+      res.json({ error: "User not found" });
       return;
     }
     res.json(existingUser?.username);
