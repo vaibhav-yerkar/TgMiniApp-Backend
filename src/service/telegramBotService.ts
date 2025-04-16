@@ -331,6 +331,26 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
   };
   // ------------------------------------------------------------
 
+  bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+
+    // Define your custom keyboard with 4 buttons
+    const replyOptions = {
+      reply_markup: {
+        keyboard: [
+          [{ text: "/start" }, { text: "/leaderboard" }],
+          [{ text: "/tasks" }, { text: "/invite" }],
+        ],
+        // Optionally, you can adjust properties:
+        resize_keyboard: true, // Resize the keyboard to fit the user's screen
+        one_time_keyboard: false, // The keyboard will persist until removed
+      },
+    };
+
+    // Send a welcome message along with the custom keyboard
+    bot.sendMessage(chatId, "Please choose an option:", replyOptions);
+  });
+
   bot.on("message", async (msg) => {
     const chatId = msg.chat.id;
     const userFrom = msg.from;
