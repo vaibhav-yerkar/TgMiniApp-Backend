@@ -338,7 +338,10 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const replyOptions = {
       reply_markup: {
         keyboard: [
-          [{ text: "🚀 Start" }, { text: "🏆 View Leaderboard" }],
+          [
+            { text: "🚀 Start", web_app: { url: TELEGRAM_MINI_APP as string } },
+            { text: "🏆 View Leaderboard" },
+          ],
           [{ text: "📋 Recent Tasks" }, { text: "🔗 Invite Friends" }],
         ],
         // Optionally, you can adjust properties:
