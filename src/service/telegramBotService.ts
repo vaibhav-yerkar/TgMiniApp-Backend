@@ -338,8 +338,8 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const replyOptions = {
       reply_markup: {
         keyboard: [
-          [{ text: "/start" }, { text: "/leaderboard" }],
-          [{ text: "/tasks" }, { text: "/invite" }],
+          [{ text: "🚀 Start" }, { text: "🏆 View Leaderboard" }],
+          [{ text: "📋 Recent Tasks" }, { text: "🔗 Invite Friends" }],
         ],
         // Optionally, you can adjust properties:
         resize_keyboard: true, // Resize the keyboard to fit the user's screen
@@ -363,7 +363,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     // Command : /invite
 
-    if (text === "/invite") {
+    if (text === "/invite" || text === "🔗 Invite Friends") {
       if (userId) {
         const response = await inviteHandler(
           BigInt(userId!.toString()),
@@ -376,7 +376,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
         return;
       }
     }
-    if (text === "/start") {
+    if (text === "/start" || text === "🚀 Start") {
       try {
         const user = await prisma.inviteTrack.findFirst({
           where: { telegramId: BigInt(userId!.toString()) },
@@ -431,7 +431,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /leaderboard
-    if (text === "/leaderboard") {
+    if (text === "/leaderboard" || text === "🏆 View Leaderboard") {
       if (userId) {
         const leaderboardText = await formatLeaderBoard(userId);
         bot.sendMessage(chatId, leaderboardText, { parse_mode: "Markdown" });
@@ -442,7 +442,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     }
 
     // Command: /task or /tasks
-    if (text === "/tasks") {
+    if (text === "/tasks" || text === "📋 Recent Tasks") {
       const tasksText = await getRecentTasks();
       bot.sendMessage(chatId, tasksText, { parse_mode: "Markdown" });
       return;
