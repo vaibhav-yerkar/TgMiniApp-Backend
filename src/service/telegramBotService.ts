@@ -208,11 +208,11 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
       if (!inviter) {
         console.log("Inviter not found in the database");
       }
-      if (!inviter?.Invites.includes(newUserId)) {
+      if (!inviter?.Invites.includes(username)) {
         await prisma.inviteTrack.update({
           where: { telegramId: inviterId },
           data: {
-            Invites: [...inviter!.Invites, newUserId],
+            Invites: [...inviter!.Invites, username],
           },
         });
       }

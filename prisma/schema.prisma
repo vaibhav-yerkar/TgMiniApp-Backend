@@ -117,6 +117,6 @@ model InviteTrack {
   telegramId BigInt  @unique
   username   String  @unique
   InviteLink String?
-  Invites    BigInt[] @default([])
-  createdAt DateTime @default(now())
+  Invites    String[] @default([])
+  createdAt  DateTime @default(now())
 }
