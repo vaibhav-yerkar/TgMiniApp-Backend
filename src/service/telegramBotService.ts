@@ -338,10 +338,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
     const replyOptions = {
       reply_markup: {
         keyboard: [
-          [
-            { text: "🚀 Start", web_app: { url: TELEGRAM_MINI_APP as string } },
-            { text: "🏆 View Leaderboard" },
-          ],
+          [{ text: "🚀 Start" }, { text: "🏆 View Leaderboard" }],
           [{ text: "📋 Recent Tasks" }, { text: "🔗 Invite Friends" }],
         ],
         // Optionally, you can adjust properties:
@@ -400,20 +397,6 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
                       text: "🚀 Open The Zo App",
                       web_app: { url: TELEGRAM_MINI_APP },
                     },
-                    {
-                      text: "🏆 View Leaderboard",
-                      callback_data: "cmd_leaderboard",
-                    },
-                  ],
-                  [
-                    {
-                      text: "📋 Recent Tasks",
-                      callback_data: "cmd_tasks",
-                    },
-                    {
-                      text: "🔗 Invite Friends",
-                      callback_data: "cmd_invite",
-                    },
                   ],
                 ],
               },
@@ -453,11 +436,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
 
     const commandsList = `Hello ${escapeMarkdown(
       firstName
-    )}!\n\nWelcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.\n\nAvailable Commands:\n
-      \t/start - Open the Mini App\n
-      \t/leaderboard - View the current leaderboard\n
-      \t/tasks - See recent tasks and updates\n
-      \t/invite - Invite your friends to earn rewards`;
+    )}!\n\nWelcome to the Zo community — a dynamic platform where you can chat, create, and collaborate. Zo is an AI-powered group chat app that allows you to interact with friends, build custom AI mini-apps, and earn rewards for active participation.`;
     bot.sendMessage(chatId, commandsList);
   });
 
