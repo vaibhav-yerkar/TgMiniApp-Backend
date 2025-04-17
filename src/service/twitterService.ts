@@ -3,7 +3,7 @@ import axios from "axios";
 import { spawn } from "child_process";
 import path from "path";
 import JSONbig from "json-bigint";
-import { sendMessageToChat } from "./telegramBotService";
+import { sendMessageToChat, TELEGRAM_BOT_USERNAME } from "./telegramBotService";
 
 const prisma = new PrismaClient();
 
@@ -471,7 +471,7 @@ export async function createTwitterTask(): Promise<void> {
             [
               {
                 text: "🚀 Open The Zo App",
-                web_app: { url: process.env.TELEGRAM_MINI_APP! },
+                url: `https://t.me/${TELEGRAM_BOT_USERNAME}`,
               },
             ],
           ],

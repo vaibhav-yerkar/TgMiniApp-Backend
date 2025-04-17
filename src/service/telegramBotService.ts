@@ -17,9 +17,11 @@ try {
   console.log("Error loading bot messages : ", error);
 }
 
+export let TELEGRAM_BOT_USERNAME: any;
+
 export const initlialiseTelegramBot = async (app?: express.Express) => {
   const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  let TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME;
+  TELEGRAM_BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME;
   const COMMUNITY_CHAT_ID = process.env.TELEGRAM_COMMUNITY_CHAT_ID;
   const WEBHOOK_URL = process.env.WEBHOOK_URL;
   const isProduction = process.env.NODE_ENV !== "development";
