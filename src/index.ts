@@ -10,6 +10,7 @@ import {
   sendReminderNotifications,
   initializeTwitterTaskScheduler,
   removeExpiredTelegramTasks,
+  weeklyReset,
 } from "./config/cron-work";
 
 import adminRouter from "./router/adminRouter";
@@ -35,6 +36,14 @@ cron.schedule(
   async () => {
     console.log("Sending reminder notifications");
     await sendReminderNotifications();
+  },
+  { timezone: "Asia/Kolkata" }
+);
+cron.schedule(
+  "0 23 * * 6",
+  async () => {
+    console.log("Resetting LeaderBoard and XPs");
+    await weeklyReset();
   },
   { timezone: "Asia/Kolkata" }
 );
