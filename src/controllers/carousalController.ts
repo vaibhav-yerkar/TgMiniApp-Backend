@@ -58,7 +58,7 @@ const safeReplacer = (_key: string, value: any) => {
  */
 export const getCarousalList: RequestHandler = async (req, res) => {
   try {
-    const images = await prisma.carousal.findMany({});
+    const images = await prisma.carousal.findMany();
     res.status(200).json(images);
     return;
   } catch (err) {
@@ -115,7 +115,7 @@ export const getCarousalList: RequestHandler = async (req, res) => {
 export const addCarousalImage: RequestHandler = async (req, res) => {
   try {
     const { link } = req.body;
-    const images = await prisma.carousal.create(link);
+    const images = await prisma.carousal.create({ data: { link } });
     res.status(200).json(images);
     return;
   } catch (err) {
