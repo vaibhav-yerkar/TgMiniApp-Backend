@@ -120,3 +120,9 @@ model InviteTrack {
   Invites    String[] @default([])
   createdAt  DateTime @default(now())
 }
+
+
+model Carousal {
+  id        Int     @id @default(autoincrement())
+  link      String
+}
