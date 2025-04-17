@@ -3,13 +3,13 @@ import {
   getUserProfile,
   fetchUserProfile,
   getAllUsers,
-  getLeaderboard,
+  // getLeaderboard,
   getOverallLeaderboard,
   getUnderScrutinyTasks,
   getFollowingList,
   completeTask,
   updateUser,
-  resetTaskScore,
+  // resetTaskScore,
   rewardInviter,
   getUsername,
   markTask,
@@ -31,7 +31,7 @@ router.get("/invite-profile/:telegramId", adminAuth, fetchUserInviteProfile);
 router.get("/profile", auth, getUserProfile);
 router.get("/invite-profile", auth, getUserInviteProfile);
 router.get("/username/:telegramId", auth, getUsername);
-router.get("/leaderboard", auth, getLeaderboard);
+// router.get("/leaderboard", auth, getLeaderboard);
 router.get("/overall-leaderboard", auth, getOverallLeaderboard);
 router.get("/twitter-followings", auth, getFollowingList);
 router.get("/all", adminAuth, getAllUsers);
@@ -41,7 +41,7 @@ router.post("/mark-task", auth, markTask);
 router.post("/complete-task/:taskId", auth, completeTask);
 router.post("/reward-inviter/:referCode", auth, rewardInviter);
 router.post("/update-invitee/:twitterId", auth, updateTwitterInvitee);
-router.post("/reset-score", adminAuth, resetTaskScore);
+// router.post("/reset-score", adminAuth, resetTaskScore);
 router.post("/update-task-status", adminAuth, updateTaskStatus);
 
 router.put("/update-username", auth, updateUserName);

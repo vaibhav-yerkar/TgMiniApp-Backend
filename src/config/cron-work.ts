@@ -22,6 +22,21 @@ export const resetDailyTasks = async () => {
   }
 };
 
+export const weeklyReset = async () => {
+  try {
+    const result = await prisma.users.updateMany({
+      data: {
+        totalScore: 0,
+        inviteScore: 0,
+        xpHistory: [],
+      },
+    });
+    console.log(`Weekly Reset execute for ${result.count} users`);
+  } catch (error) {
+    console.log("Error executing weekly resets : ", error);
+  }
+};
+
 export const sendReminderNotifications = async () => {
   try {
     const users = await prisma.users.findMany({

@@ -84,18 +84,18 @@ model Users {
   telegramId        BigInt         @unique
   username          String         @unique
   totalScore        Int            @default(0)
-  taskScore         Int            @default(0)
   inviteScore       Int            @default(0)
   lastResetDate     DateTime       @default(now())
   underScrutiny     TaskComplete[] @relation("taskUnderScrutiny")
-  taskCompleted     Json[]          @default([])
-  onceTaskCompleted Json[]          @default([])
+  taskCompleted     Json[]         @default([])
+  onceTaskCompleted Json[]         @default([])
   Invitees          BigInt[]       @default([])
   twitterInvitees   BigInt[]       @default([])
   twitterId         BigInt?        @unique
   twitterUsername   String?        @unique
+  xpHistory         Json[]         @default([])
   referCode         Int            @unique @default(dbgenerated("((floor(random()*900000)+100000))::integer"))
-  firebaseId       String?         @unique
+  firebaseId        String?        @unique
 }
 
 model Admin {

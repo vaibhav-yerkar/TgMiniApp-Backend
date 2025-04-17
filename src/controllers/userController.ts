@@ -97,8 +97,6 @@ const safeReplacer = (_key: string, value: any) => {
  *           type: string
  *         totalScore:
  *           type: integer
- *         taskScore:
- *           type: integer
  *         inviteScore:
  *           type: integer
  *         lastResetDate:
@@ -108,6 +106,10 @@ const safeReplacer = (_key: string, value: any) => {
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/TaskComplete'
+ *         xpHistory:
+ *           type: array
+ *           items:
+ *             type: object
  *         taskCompleted:
  *           type: array
  *           items:
@@ -433,33 +435,33 @@ export const getOverallLeaderboard: RequestHandler = async (req, res) => {
  *               type: array
  *               $ref: '#/components/schemas/User'
  */
-export const getLeaderboard: RequestHandler = async (req, res) => {
-  try {
-    const userId = parseInt(req.userId! as string);
+// export const getLeaderboard: RequestHandler = async (req, res) => {
+//   try {
+//     const userId = parseInt(req.userId! as string);
 
-    const users = await prisma.users.findMany({
-      select: { id: true, username: true, taskScore: true, telegramId: true },
-      orderBy: { taskScore: "desc" },
-    });
+//     const users = await prisma.users.findMany({
+//       select: { id: true, username: true, taskScore: true, telegramId: true },
+//       orderBy: { taskScore: "desc" },
+//     });
 
-    const leaderboard = users.map((user, index) => ({
-      ...user,
-      rank: index + 1,
-    }));
+//     const leaderboard = users.map((user, index) => ({
+//       ...user,
+//       rank: index + 1,
+//     }));
 
-    const userPosition = leaderboard.find((user) => user.id === userId);
+//     const userPosition = leaderboard.find((user) => user.id === userId);
 
-    res.json(
-      JSON.parse(
-        JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
-      )
-    );
-    return;
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-    return;
-  }
-};
+//     res.json(
+//       JSON.parse(
+//         JSON.stringify({ currentUser: userPosition, leaderboard }, safeReplacer)
+//       )
+//     );
+//     return;
+//   } catch (error) {
+//     res.status(500).json({ error: "Internal server error" });
+//     return;
+//   }
+// };
 
 /**
  * @swagger
@@ -734,8 +736,9 @@ export const markTask: RequestHandler = async (req, res) => {
         return;
       }
       const updateData: any = {
-        taskScore: { increment: task.points },
+        // taskScore: { increment: task.points },
         totalScore: { increment: task.points },
+        xpHistory: { push: { name: task.title, xp: task.points } },
       };
       if (task.type === "DAILY") {
         updateData.taskCompleted = {
@@ -901,8 +904,9 @@ export const completeTask: RequestHandler = async (req, res) => {
     await prisma.taskComplete.delete({ where: { id: taskUnderScrutiny.id } });
 
     const updateData: any = {
-      taskScore: { increment: task.points },
+      // taskScore: { increment: task.points },
       totalScore: { increment: task.points },
+      xpHistory: { push: { name: task.title, xp: task.points } },
     };
 
     if (task.type === "DAILY") {
@@ -1159,11 +1163,11 @@ export const updateTwitterInvitee: RequestHandler = async (req, res) => {
  *                 count:
  *                   type: integer
  */
-export const resetTaskScore: RequestHandler = async (req, res) => {
+export const resetTotalScore: RequestHandler = async (req, res) => {
   try {
     const result = await prisma.users.updateMany({
       data: {
-        taskScore: 0,
+        totalScore: 0,
         taskCompleted: [],
       },
     });
@@ -1253,6 +1257,12 @@ export const rewardInviter: RequestHandler = async (req, res) => {
               increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
             },
             Invitees: { push: user.telegramId },
+            xpHistory: {
+              push: {
+                name: "Mini App Invite",
+                xp: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+              },
+            },
           },
         });
 

@@ -84,7 +84,6 @@ export const getLeaderboardCSV: RequestHandler = async (req, res) => {
     const users = await prisma.users.findMany({
       select: {
         username: true,
-        taskScore: true,
         totalScore: true,
         inviteScore: true,
       },

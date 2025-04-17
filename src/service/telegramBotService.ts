@@ -154,7 +154,7 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             (task, index) =>
               `${index + 1}. *${escapeMarkdown(task.title)}* (${
                 task.points
-              } pts)\n   ${
+              } XPs)\n   ${
                 task.description
                   ? escapeMarkdown(task.description)
                   : "No description"
@@ -234,6 +234,12 @@ export const initlialiseTelegramBot = async (app?: express.Express) => {
             },
             inviteScore: {
               increment: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+            },
+            xpHistory: {
+              push: {
+                name: "Community Invite",
+                xp: parseInt(process.env.INVITE_REWARD_AMOUNT as string),
+              },
             },
           },
         });
